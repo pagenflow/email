@@ -1,7 +1,7 @@
 {
   "name": "@pagenflow/email",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Free Email Compatible Components",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
