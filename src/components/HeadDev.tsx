@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactNode, useEffect } from "react";
 
 export interface HeadDevProps {
