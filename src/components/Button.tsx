@@ -136,7 +136,7 @@ function Button({ config, devMode }: ButtonProps) {
             <div dangerouslySetInnerHTML={{ __html: vmlButton }} />
 
             {/* 2. Standard HTML Button (For all other clients) */}
-            {/*[if !mso]><!*/}
+            <div dangerouslySetInnerHTML={{ __html: `<!--[if !mso]><!-->` }} />
             <table
               role="presentation"
               cellPadding={0}
@@ -150,14 +150,6 @@ function Button({ config, devMode }: ButtonProps) {
               <tbody>
                 <tr>
                   <td style={buttonTdStyle}>
-                    {/* <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={linkStyle}
-                    >
-                      {children}
-                    </a> */}
                     {createElement(
                       devMode ? "button" : "a",
                       {
@@ -177,7 +169,7 @@ function Button({ config, devMode }: ButtonProps) {
                 </tr>
               </tbody>
             </table>
-            {/*<![endif]*/}
+            <div dangerouslySetInnerHTML={{ __html: `<!--<![endif]-->` }} />
           </td>
         </tr>
       </tbody>
