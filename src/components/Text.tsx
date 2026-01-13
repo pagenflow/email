@@ -3,7 +3,7 @@ import { arePropsEqual } from "../utils/memoUtils";
 
 export interface TextConfig {
   /** The text content or React nodes to render. */
-  text: string;
+  text?: string;
 
   /** Padding around the text (applied to the containing TD). */
   padding?: string;
@@ -48,9 +48,10 @@ export interface TextConfig {
 export type TextProps = {
   config: TextConfig;
   devMode?: ReactNode;
+  children?:ReactNode
 };
 
-function Text({ config, devMode }: TextProps) {
+function Text({ config, devMode, children }: TextProps) {
   const {
     text,
     padding,
@@ -119,7 +120,7 @@ function Text({ config, devMode }: TextProps) {
             */}
             <div
               style={contentStyle}
-              dangerouslySetInnerHTML={{ __html: text ?? "" }}
+              dangerouslySetInnerHTML={{ __html: text ?? children ?? "" }}
             />
           </td>
         </tr>

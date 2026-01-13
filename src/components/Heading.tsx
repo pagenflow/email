@@ -54,9 +54,10 @@ export interface HeadingConfig {
 export type HeadingProps = {
   config: HeadingConfig;
   devMode?: ReactNode;
+  children?:ReactNode;
 };
 
-function Heading({ config, devMode }: HeadingProps) {
+function Heading({ config, devMode, children }: HeadingProps) {
   const {
     text,
     level = "h1",
@@ -131,7 +132,7 @@ function Heading({ config, devMode }: HeadingProps) {
             {/* The actual Heading Tag with all inline styles */}
             <HeadingTag
               style={headingStyle}
-              dangerouslySetInnerHTML={{ __html: text ?? "" }}
+              dangerouslySetInnerHTML={{ __html: text ?? children ?? "" }}
             />
           </td>
         </tr>
