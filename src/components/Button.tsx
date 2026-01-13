@@ -127,6 +127,7 @@ function Button({ config, devMode }: ButtonProps) {
         margin: 0,
         padding: 0,
       }}
+      onClick={devMode ? (e) => e.preventDefault() : undefined}
     >
       <tbody>
         <tr>

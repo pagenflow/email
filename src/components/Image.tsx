@@ -126,6 +126,7 @@ function Image({ config, devNode, devMode }: ImageProps) {
         width: width || "100%",
         borderCollapse: "collapse",
       }}
+      onClick={devMode ? (e) => e.preventDefault() : undefined}
     >
       <tbody>
         <tr>
@@ -135,7 +136,7 @@ function Image({ config, devNode, devMode }: ImageProps) {
           </td>
         </tr>
       </tbody>
-      {devNode && (
+      {devMode && !!devNode && (
         <tfoot>
           <tr>
             <td>{devNode}</td>
