@@ -1,0 +1,166 @@
+import { ReactNode } from "react";
+
+export interface HeadProps {
+  /** Additional elements like custom <style> blocks, <title>, etc. */
+  children?: ReactNode;
+  /** Global background color (used in CSS reset). */
+  backgroundColor?: string;
+  /** Subject line for the email title. */
+  title?: string;
+}
+
+export default function Head({
+  children,
+  backgroundColor = "#ffffff",
+  title = "Email Preview",
+}: HeadProps) {
+  // Outlook (MSO) Styles and Reset
+  const msoResetStyles = `
+        /* Forces Outlook to render 100% width and prevents line-height issues */
+        .ExternalClass { width: 100%; line-height: 100%; } 
+        .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height: 100%; }
+        
+        /* Reset tables for MSO and border issues */
+        table { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; border-spacing: 0; }
+        td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        
+        /* Reset images */
+        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+        
+        /* Fix for Gmail image wrapping and blue links */
+        #MessageViewBody img { min-width: 100%; }
+        
+        /* --- APPLE BLUE LINK FIX --- */
+        a[x-apple-data-detectors] { 
+            color: inherit !important; 
+            text-decoration: none !important; 
+            font-size: inherit !important; 
+            font-family: inherit !important; 
+            font-weight: inherit !important; 
+            line-height: inherit !important; 
+        }
+
+        /* 🔒 NEW: Set global background color via CSS for clients that respect it */
+        body { background-color: ${backgroundColor} !important; }
+
+        /* Disable browser default margin */
+        p {
+            margin: 0;
+        }
+    `;
+
+  const globalStyles = `
+        @media screen and (max-width: 600px) {
+            .container-fixed-width {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            .stack-td {
+                width: 100% !important;
+                display: block !important;
+                float: left;
+                clear: both;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            .desktop-gap-column {
+                width: 0 !important;
+                display: none !important;
+            }
+
+            .mobile-gap-spacer {
+                display: block !important;
+                width: 100% !important;
+                font-size: 1px !important;
+                line-height: 1px !important;
+                mso-line-height-rule: exactly;
+            }
+        }
+        
+        /* ================================================= */
+        /* 🔒 UNIVERSAL LINK RESET */
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        /* ================================================= */
+
+        /* ================================================= */
+        /* 🔒 LIST STYLE ENFORCEMENT */
+        
+        /* Reset all lists and list items */
+        ol, ul {
+          margin: 0px;
+          padding: 0px;
+          list-style: none;
+        }
+        
+        li {
+          list-style-type: none !important;
+          list-style: none !important;
+          position: relative;
+          padding-left: 0px;
+          margin: 0px;
+          display: block !important;
+        }
+
+        /* 🔒 FORCE HIDE ::marker pseudo-element for non-list items */
+        li::marker {
+          content: "" !important;
+          font-size: 0px !important;
+          line-height: 0px !important;
+          color: transparent !important;
+          width: 0px !important;
+        }
+
+        /* Apply bullet styles only to items with data-list="bullet" */
+        li[data-list="bullet"] {
+          list-style-type: disc !important;
+          list-style-position: inside !important;
+          padding-left: 1.5em;
+          display: list-item !important;
+        }
+
+        /* Apply ordered styles only to items with data-list="ordered" */
+        li[data-list="ordered"] {
+          list-style-type: decimal !important;
+          list-style-position: inside !important;
+          padding-left: 1.5em;
+          display: list-item !important;
+        }
+
+        /* Ensure marker only takes its natural size with no extra spacing */
+        li[data-list="bullet"]::marker,
+        li[data-list="ordered"]::marker {
+          content: normal !important;
+          font-size: inherit !important;
+          color: inherit !important;
+          width: auto !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        /* ================================================= */
+    `;
+
+  return (
+    <head>
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      <title>{title}</title>
+      <style
+        type="text/css"
+        dangerouslySetInnerHTML={{ __html: msoResetStyles }}
+      />
+      <style
+        type="text/css"
+        dangerouslySetInnerHTML={{ __html: globalStyles }}
+      />
+      {children}
+    </head>
+  );
+}
