@@ -1,5 +1,6 @@
 import { CSSProperties, Fragment, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
+import { BorderConfig } from "../types";
 
 export type WidthType = "full" | "fixed";
 export type WidthDistributionType = "equals" | "ratio" | "manual";
@@ -22,16 +23,7 @@ export type ChildrenConstraints =
       widths: string[];
     };
 
-// Border configuration
-export interface BorderConfig {
-  width?: string;
-  style?: "solid" | "dashed" | "dotted" | "double";
-  color?: string;
-  top?: { width: string; style: string; color: string };
-  right?: { width: string; style: string; color: string };
-  bottom?: { width: string; style: string; color: string };
-  left?: { width: string; style: string; color: string };
-}
+
 
 export interface ContainerConfig {
   widthType: WidthType;

@@ -1,11 +1,6 @@
 import { Fragment, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
-
-export type JustifyContent = "start" | "center" | "end";
-export type AlignItems = "start" | "center" | "end";
-
-type TdAlign = "center" | "left" | "right";
-type TdValign = "top" | "middle" | "bottom";
+import { AlignItems, BorderConfig, JustifyContent, TdAlign, TdValign } from "../types";
 
 const justifyMap: Record<JustifyContent, TdAlign> = {
   start: "left",
@@ -17,17 +12,6 @@ const alignMap: Record<AlignItems, TdValign> = {
   center: "middle",
   end: "bottom",
 };
-
-// Border configuration
-export interface BorderConfig {
-  width?: string;
-  style?: "solid" | "dashed" | "dotted" | "double";
-  color?: string;
-  top?: { width: string; style: string; color: string };
-  right?: { width: string; style: string; color: string };
-  bottom?: { width: string; style: string; color: string };
-  left?: { width: string; style: string; color: string };
-}
 
 export interface RowConfig {
   gap?: string; // Now supports both horizontal gap between children AND vertical gap for nested rows

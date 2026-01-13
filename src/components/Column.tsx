@@ -1,23 +1,12 @@
 import { Fragment, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
+import { BorderConfig } from "../types";
 
 export interface BackgroundImageType {
   src: string;
   repeat?: "no-repeat" | "repeat" | "repeat-x" | "repeat-y";
   size?: "auto" | "cover" | "contain";
   position?: string;
-}
-
-// Border configuration supporting multiple borders via nested tables
-export interface BorderConfig {
-  width?: string;
-  style?: "solid" | "dashed" | "dotted" | "double";
-  color?: string;
-  // Support individual sides
-  top?: { width: string; style: string; color: string };
-  right?: { width: string; style: string; color: string };
-  bottom?: { width: string; style: string; color: string };
-  left?: { width: string; style: string; color: string };
 }
 
 export type ColumnConfig = {

@@ -1,16 +1,6 @@
 import React, { memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
-
-// Border configuration
-export interface BorderConfig {
-  width?: string;
-  style?: "solid" | "dashed" | "dotted" | "double";
-  color?: string;
-  top?: { width: string; style: string; color: string };
-  right?: { width: string; style: string; color: string };
-  bottom?: { width: string; style: string; color: string };
-  left?: { width: string; style: string; color: string };
-}
+import { BorderConfig } from "../types";
 
 export type SectionConfig = {
   sectionType: "header" | "footer" | "content";
