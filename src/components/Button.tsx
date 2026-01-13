@@ -1,4 +1,4 @@
-import { createElement, CSSProperties, memo, ReactNode } from "react";
+import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 
 // Helper for alignment
@@ -130,47 +130,26 @@ function Button({ config, devMode }: ButtonProps) {
     >
       <tbody>
         <tr>
-          <td>
-            {/* 1. VML Button (For Outlook) */}
-            {/* Using dangerouslySetInnerHTML is a necessary evil for VML */}
-            <div dangerouslySetInnerHTML={{ __html: vmlButton }} />
-
-            {/* 2. Standard HTML Button (For all other clients) */}
-            <div dangerouslySetInnerHTML={{ __html: `<!--[if !mso]><!-->` }} />
-            <table
-              role="presentation"
-              cellPadding={0}
-              cellSpacing={0}
-              border={0}
-              style={{
-                borderCollapse: "collapse",
-                width: "100%",
-              }}
-            >
-              <tbody>
-                <tr>
-                  <td style={buttonTdStyle}>
-                    {createElement(
-                      devMode ? "button" : "a",
-                      {
-                        ...(devMode
-                          ? {}
-                          : {
-                              href,
-                              target: "_blank",
-                              rel: "noopener noreferrer",
-                            }),
-                        style: linkStyle,
-                        draggable: false,
-                      },
-                      children,
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div dangerouslySetInnerHTML={{ __html: `<!--<![endif]-->` }} />
-          </td>
+          <td
+  dangerouslySetInnerHTML={{
+    __html: `
+      ${vmlButton}
+      <!--[if !mso]><!-->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
+        <tbody>
+          <tr>
+            <td style="background-color: ${backgroundColor}; border-radius: ${borderRadius}; padding: 0; width: ${width || "auto"};">
+              <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: none; display: block; padding: ${padding}; word-break: break-word; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; line-height: 1.2;">
+                ${typeof children === "string" ? children : ""}
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <!--<![endif]-->
+    `,
+  }}
+/>
         </tr>
       </tbody>
     </table>
