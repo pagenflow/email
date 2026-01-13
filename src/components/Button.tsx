@@ -98,7 +98,7 @@ function Button({ config, devMode }: ButtonProps) {
     <!--[if mso]>
     <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;v-text-anchor:middle;width:${vmlWidth}px;" arcsize="${(parseInt(borderRadius) / vmlHeight) * 100}%" strokecolor="${vmlFillColor}" fillcolor="${vmlFillColor}">
       <w:anchorlock/>
-      <center style="color:${color};font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">
+      <center style="color:${color};font-family:${linkStyle.fontFamily};font-size:${linkStyle.fontSize};font-weight:${linkStyle.fontWeight};">
         ${typeof children === "string" ? children : ""}
       </center>
     </v:roundrect>
@@ -131,15 +131,15 @@ function Button({ config, devMode }: ButtonProps) {
       <tbody>
         <tr>
           <td
-  dangerouslySetInnerHTML={{
-    __html: `
+            dangerouslySetInnerHTML={{
+              __html: `
       ${vmlButton}
       <!--[if !mso]><!-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
           <tr>
-            <td style="background-color: ${backgroundColor}; border-radius: ${borderRadius}; padding: 0; width: ${width || "auto"};">
-              <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: none; display: block; padding: ${padding}; word-break: break-word; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; line-height: 1.2;">
+            <td style="background-color: ${buttonTdStyle.backgroundColor}; border-radius: ${buttonTdStyle.borderRadius}; padding: ${buttonTdStyle.padding}; width: ${buttonTdStyle.width};">
+              <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${linkStyle.textDecoration}; display: ${linkStyle.display}; padding: ${linkStyle.padding}; word-break: ${linkStyle.wordBreak}; font-family: ${linkStyle.fontFamily}; font-size: ${linkStyle.fontSize}; font-weight: ${linkStyle.fontWeight}; line-height: ${linkStyle.lineHeight};">
                 ${typeof children === "string" ? children : ""}
               </a>
             </td>
@@ -148,8 +148,8 @@ function Button({ config, devMode }: ButtonProps) {
       </table>
       <!--<![endif]-->
     `,
-  }}
-/>
+            }}
+          />
         </tr>
       </tbody>
     </table>
