@@ -6,7 +6,7 @@ export type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
 export interface HeadingConfig {
   /** The text content. */
-  text: ReactNode;
+  text?: ReactNode;
 
   /** HTML heading level (h1 through h6). */
   level?: HeadingLevel;
