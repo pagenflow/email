@@ -1,9 +1,6 @@
 export { default as Body } from './components/Body';
 export type { BodyProps, GlobalConfig } from './components/Body';
 
-export { default as BodyDev } from './components/BodyDev';
-export type { BodyDevProps } from './components/BodyDev';
-
 export { default as Button } from './components/Button';
 export type { ButtonProps, ButtonConfig } from './components/Button';
 
@@ -18,9 +15,6 @@ export type { DividerProps, DividerConfig } from './components/Divider';
 
 export { default as Head } from './components/Head';
 export type { HeadProps } from './components/Head';
-
-export { default as HeadDev } from './components/HeadDev';
-export type { HeadDevProps } from './components/HeadDev';
 
 export { default as Heading } from './components/Heading';
 export type { HeadingProps, HeadingLevel, HeadingConfig } from './components/Heading';

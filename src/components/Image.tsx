@@ -14,6 +14,9 @@ export interface ImageConfig {
   /** Height of the image. Optional, usually auto-calculated if width is set. */
   height?: string;
 
+  maxWidth?: string;
+  maxHeight?: string;
+
   /** Background color of the containing TD/parent element if the image has transparency. */
   backgroundColor?: string;
 
@@ -42,6 +45,8 @@ function Image({ config, devNode, devMode }: ImageProps) {
     alt,
     width,
     height,
+    maxHeight,
+    maxWidth,
     backgroundColor,
     padding,
     borderRadius,
@@ -58,7 +63,8 @@ function Image({ config, devNode, devMode }: ImageProps) {
     // Dimensions (using CSS fallback)
     width: width || "100%",
     height: height || "auto",
-    maxWidth: "100%",
+    maxWidth: maxWidth || "100%",
+    maxHeight: maxHeight,
 
     // Styling
     border: "0", // Ensures no default browser/client border
@@ -88,7 +94,18 @@ function Image({ config, devNode, devMode }: ImageProps) {
       src={src}
       alt={alt}
       style={imgStyle}
-      width={width?.endsWith("px") ? parseInt(width, 10) : undefined}
+      // For Outlook: Use the smaller of width or maxWidth for the HTML attribute
+      width={(() => {
+        const widthPx = width?.endsWith("px") ? parseInt(width, 10) : undefined;
+        const maxWidthPx = maxWidth?.endsWith("px")
+          ? parseInt(maxWidth, 10)
+          : undefined;
+
+        if (widthPx && maxWidthPx) {
+          return Math.min(widthPx, maxWidthPx);
+        }
+        return widthPx || maxWidthPx;
+      })()}
       height={height?.endsWith("px") ? parseInt(height, 10) : undefined}
       {...{ border: 0 as any }}
     />

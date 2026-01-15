@@ -204,9 +204,20 @@ function Column({ children, config, devNode }: ColumnProps) {
                               <tr>
                                 <td
                                   style={{
-                                    verticalAlign: "top",
-                                    textAlign: "left",
+                                    verticalAlign: config.alignItems
+                                      ? alignMap[config.alignItems]
+                                      : "top",
                                   }}
+                                  valign={
+                                    config.justifyContent
+                                      ? vAlignMap[config.justifyContent]
+                                      : "top"
+                                  }
+                                  align={
+                                    config.alignItems
+                                      ? alignMap[config.alignItems]
+                                      : "left"
+                                  }
                                 >
                                   {child}
                                 </td>

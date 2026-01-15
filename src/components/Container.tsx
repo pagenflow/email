@@ -23,8 +23,6 @@ export type ChildrenConstraints =
       widths: string[];
     };
 
-
-
 export interface ContainerConfig {
   widthType: WidthType;
   childrenConstraints: ChildrenConstraints;
@@ -293,9 +291,12 @@ function Container({ children, config, devMode }: ContainerProps) {
             <div dangerouslySetInnerHTML={{ __html: msoFixedWrapper }} />
 
             <table
-              className={
-                widthType === "fixed" ? "container-fixed-width" : undefined
-              }
+              className={[
+                widthType === "fixed" ? "container-fixed-width" : undefined,
+                devMode ? "main-wrapper relative" : undefined,
+              ]
+                .filter(Boolean)
+                .join(" ")}
               aria-label={`Container | Table Middle`}
               cellPadding={0}
               cellSpacing={0}
@@ -317,9 +318,7 @@ function Container({ children, config, devMode }: ContainerProps) {
                       style={contentTableStyle}
                     >
                       <tbody>
-                        <tr>
-                          {rowElements}
-                        </tr>
+                        <tr>{rowElements}</tr>
                       </tbody>
                     </table>
                   </td>
