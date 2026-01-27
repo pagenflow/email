@@ -28,6 +28,36 @@ export interface ButtonConfig {
 
   /** Horizontal alignment within the container. */
   justifyContent?: "start" | "center" | "end";
+
+  /** Horizontal text alignment within the button (e.g., 'left', 'center'). */
+  textAlign?: "left" | "center" | "right" | "justify";
+
+  /** Font size (e.g., '16px'). */
+  fontSize?: string;
+
+  /** Font weight (e.g., 'bold' or '700'). */
+  fontWeight?: string;
+
+  /** Font style (e.g., 'italic'). */
+  fontStyle?: string;
+
+  /** Line height (e.g., '1.5' or '24px'). */
+  lineHeight?: string;
+
+  /** Letter spacing (e.g., '0.5px', '1px'). */
+  letterSpacing?: string;
+
+  /** Text transform (e.g., 'uppercase', 'lowercase', 'capitalize'). */
+  textTransform?: string;
+
+  /** Text decoration (e.g., 'underline', 'line-through'). */
+  textDecoration?: string;
+
+  /** Font family (e.g., 'Arial, sans-serif'). */
+  fontFamily?: string;
+
+  /** White space behavior (e.g., 'normal', 'nowrap', 'pre-wrap'). */
+  whiteSpace?: string;
 }
 
 export type ButtonProps = {
@@ -55,20 +85,35 @@ function Button({ config, devMode }: ButtonProps) {
     borderRadius = "3px",
     width,
     justifyContent = "center",
+    textAlign = "center",
+    fontSize = "16px",
+    fontWeight = "bold",
+    fontStyle,
+    lineHeight = "1.2",
+    letterSpacing,
+    textTransform,
+    textDecoration = "none",
+    fontFamily = "Arial, sans-serif",
+    whiteSpace = "normal",
   } = config;
 
   // 1. Link (A) Tag Styles (Fallback for Webmail/Mobile)
   const linkStyle: CSSProperties = {
     color: color,
-    textDecoration: "none",
+    textDecoration: textDecoration,
     display: "block",
     // Apply padding here for simplicity, though the TD is more reliable
     padding: padding,
     wordBreak: "break-word",
-    fontFamily: "Arial, sans-serif",
-    fontSize: "16px",
-    fontWeight: "bold",
-    lineHeight: "1.2",
+    fontFamily: fontFamily,
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    fontStyle: fontStyle,
+    lineHeight: lineHeight,
+    letterSpacing: letterSpacing,
+    textTransform: textTransform as any,
+    textAlign: textAlign,
+    whiteSpace: whiteSpace as any,
   };
 
   // 2. Button Wrapper TD Style
@@ -93,12 +138,28 @@ function Button({ config, devMode }: ButtonProps) {
 
   const align = justifyMap[justifyContent];
 
+  // Build VML font styles
+  const vmlFontWeight = fontWeight || "bold";
+  const vmlFontStyle = fontStyle === "italic" ? "font-style:italic;" : "";
+  const vmlLetterSpacing = letterSpacing
+    ? `letter-spacing:${letterSpacing};`
+    : "";
+  const vmlTextTransform = textTransform
+    ? `text-transform:${textTransform};`
+    : "";
+  const vmlTextDecoration =
+    textDecoration && textDecoration !== "none"
+      ? `text-decoration:${textDecoration};`
+      : "";
+  const vmlWhiteSpace =
+    whiteSpace && whiteSpace !== "normal" ? `white-space:${whiteSpace};` : "";
+
   // VML code uses MSO conditional comments to render only in Outlook
   const vmlButton = `
     <!--[if mso]>
     <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;v-text-anchor:middle;width:${vmlWidth}px;" arcsize="${(parseInt(borderRadius) / vmlHeight) * 100}%" strokecolor="${vmlFillColor}" fillcolor="${vmlFillColor}">
       <w:anchorlock/>
-      <center style="color:${color};font-family:${linkStyle.fontFamily};font-size:${linkStyle.fontSize};font-weight:${linkStyle.fontWeight};">
+      <center style="color:${color};font-family:${fontFamily};font-size:${fontSize};font-weight:${vmlFontWeight};${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}">
         ${typeof children === "string" ? children : ""}
       </center>
     </v:roundrect>
@@ -140,7 +201,7 @@ function Button({ config, devMode }: ButtonProps) {
         <tbody>
           <tr>
             <td style="background-color: ${buttonTdStyle.backgroundColor}; border-radius: ${buttonTdStyle.borderRadius}; padding: ${buttonTdStyle.padding}; width: ${buttonTdStyle.width};">
-              <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${linkStyle.textDecoration}; display: ${linkStyle.display}; padding: ${linkStyle.padding}; word-break: ${linkStyle.wordBreak}; font-family: ${linkStyle.fontFamily}; font-size: ${linkStyle.fontSize}; font-weight: ${linkStyle.fontWeight}; line-height: ${linkStyle.lineHeight};">
+              <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${textDecoration}; display: ${linkStyle.display}; padding: ${linkStyle.padding}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-align: ${textAlign}; white-space: ${whiteSpace};">
                 ${typeof children === "string" ? children : ""}
               </a>
             </td>

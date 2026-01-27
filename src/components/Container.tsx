@@ -49,6 +49,7 @@ export type ContainerProps = {
   config: ContainerConfig;
   children: ReactNode;
   devMode?: boolean;
+  devNode?: ReactNode;
 };
 
 const alignMap: Record<NonNullable<ContainerConfig["alignItems"]>, string> = {
@@ -93,7 +94,7 @@ function getBorderStyle(border?: BorderConfig): CSSProperties {
   return style;
 }
 
-function Container({ children, config, devMode }: ContainerProps) {
+function Container({ children, config, devMode, devNode }: ContainerProps) {
   const { widthType, childrenConstraints } = config;
 
   const childrenArray = (
@@ -324,6 +325,13 @@ function Container({ children, config, devMode }: ContainerProps) {
                   </td>
                 </tr>
               </tbody>
+              {!!devNode && (
+                <tfoot>
+                  <tr>
+                    <td>{devNode}</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
 
             <div dangerouslySetInnerHTML={{ __html: msoFixedFooter }} />

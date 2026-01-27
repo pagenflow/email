@@ -109,7 +109,6 @@ function Text({ config, devMode, children }: TextProps) {
         width: "100%",
         borderCollapse: "collapse",
       }}
-      onClick={devMode ? (e) => e.preventDefault() : undefined}
     >
       <tbody>
         <tr>
