@@ -10,6 +10,7 @@
     "README.md",
     "repo-header-image.png"
   ],
+  "homepage": "https://email.pagenflow.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/pagenflow/email.git"
