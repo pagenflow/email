@@ -87,7 +87,7 @@ function Button({ config, devMode }: ButtonProps) {
     justifyContent = "center",
     textAlign = "center",
     fontSize = "16px",
-    fontWeight = "bold",
+    fontWeight = "500",
     fontStyle,
     lineHeight = "1.2",
     letterSpacing,
@@ -116,12 +116,13 @@ function Button({ config, devMode }: ButtonProps) {
     whiteSpace: whiteSpace as any,
   };
 
-  // 2. Button Wrapper TD Style
-  const buttonTdStyle: CSSProperties = {
+  // 2. Outer TD Style for Background and Border Radius (no border)
+  const backgroundTdStyle: CSSProperties = {
     backgroundColor: backgroundColor,
     borderRadius: borderRadius,
-    padding: "0",
     width: width || "auto",
+    // Overflow hidden to clip background to border-radius
+    ...(borderRadius && { overflow: "hidden" }),
   };
 
   // --- VML Calculation and Code for Outlook Compatibility ---
@@ -200,10 +201,20 @@ function Button({ config, devMode }: ButtonProps) {
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
           <tr>
-            <td style="background-color: ${buttonTdStyle.backgroundColor}; border-radius: ${buttonTdStyle.borderRadius}; padding: ${buttonTdStyle.padding}; width: ${buttonTdStyle.width};">
-              <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${textDecoration}; display: ${linkStyle.display}; padding: ${linkStyle.padding}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-align: ${textAlign}; white-space: ${whiteSpace};">
-                ${typeof children === "string" ? children : ""}
-              </a>
+            <td style="background-color: ${backgroundTdStyle.backgroundColor}; border-radius: ${backgroundTdStyle.borderRadius}; width: ${backgroundTdStyle.width}; ${borderRadius ? "overflow: hidden;" : ""}">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; border-radius: ${borderRadius}; width: 100%;">
+                <tbody>
+                  <tr>
+                    <td style="padding: ${padding};">
+                      <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${textDecoration}; display: ${linkStyle.display}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-align: ${textAlign}; white-space: ${whiteSpace};">
+                        <span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-decoration: ${textDecoration}; white-space: ${whiteSpace};">
+                          ${typeof children === "string" ? children : ""}
+                        </span>
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </td>
           </tr>
         </tbody>

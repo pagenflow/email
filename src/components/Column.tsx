@@ -102,15 +102,12 @@ function Column({ children, config, devNode }: ColumnProps) {
     borderCollapse: "collapse",
   };
 
-  // 2. Outer TD style: Background, Border Radius, and Border
+  // 2. Outer TD style: Background and Border Radius (no border here)
   const outerTdStyle: React.CSSProperties = {
     width: config.width,
     height: config.height,
     backgroundColor: config.backgroundColor,
     borderRadius: config.borderRadius,
-
-    // Apply border styles
-    ...getBorderStyle(config.border),
 
     // Background Image styles
     backgroundImage: config.backgroundImage
@@ -119,6 +116,19 @@ function Column({ children, config, devNode }: ColumnProps) {
     backgroundRepeat: config.backgroundImage?.repeat,
     backgroundSize: config.backgroundImage?.size,
     backgroundPosition: config.backgroundImage?.position,
+
+    // Overflow hidden to clip background to border-radius
+    ...(config.borderRadius && { overflow: "hidden" }),
+  };
+
+  // 2b. Inner table style: Border and Border Radius
+  const innerTableStyle: React.CSSProperties = {
+    width: "100%",
+    height: config.height,
+    borderCollapse: "separate", // Changed from collapse to separate for border-radius
+    borderSpacing: 0,
+    borderRadius: config.borderRadius,
+    ...getBorderStyle(config.border),
   };
 
   // 3. Inner TD style: Padding and Vertical Alignment
@@ -164,11 +174,7 @@ function Column({ children, config, devNode }: ColumnProps) {
               cellPadding={0}
               cellSpacing={0}
               border={0}
-              style={{
-                width: "100%",
-                height: config.height,
-                borderCollapse: "collapse",
-              }}
+              style={innerTableStyle}
             >
               <tbody>
                 <tr>

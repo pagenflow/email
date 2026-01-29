@@ -1,6 +1,12 @@
 import { Fragment, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
-import { AlignItems, BorderConfig, JustifyContent, TdAlign, TdValign } from "../types";
+import {
+  AlignItems,
+  BorderConfig,
+  JustifyContent,
+  TdAlign,
+  TdValign,
+} from "../types";
 
 const justifyMap: Record<JustifyContent, TdAlign> = {
   start: "left",
@@ -65,16 +71,28 @@ function Row({ children, config, devNode }: RowProps) {
 
   const numChildren = childrenArray.length;
 
-  // 1. TD for Background, Border, and Border Radius
+  // 1. Outer TD for Background and Border Radius (no border here)
   const backgroundTdStyle: React.CSSProperties = {
     backgroundColor: config.backgroundColor,
     borderRadius: config.borderRadius,
-    ...getBorderStyle(config.border),
     width: config.width || "100%",
     height: config.height,
+
+    // Overflow hidden to clip background to border-radius
+    ...(config.borderRadius && { overflow: "hidden" }),
   };
 
-  // 2. TD for Padding
+  // 2. Inner Table for Border and Border Radius
+  const borderTableStyle: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    borderCollapse: "separate", // Changed from collapse to separate for border-radius
+    borderSpacing: 0,
+    borderRadius: config.borderRadius,
+    ...getBorderStyle(config.border),
+  };
+
+  // 3. TD for Padding
   const paddingTdStyle: React.CSSProperties = {
     padding: config.padding,
     width: "100%",
@@ -82,7 +100,7 @@ function Row({ children, config, devNode }: RowProps) {
     verticalAlign: "top",
   };
 
-  // 3. Content Table - horizontal layout
+  // 4. Content Table - horizontal layout
   const contentTableStyle: React.CSSProperties = {
     width: "auto",
     height: "100%",
@@ -91,7 +109,7 @@ function Row({ children, config, devNode }: RowProps) {
     maxWidth: config.width || "100%",
   };
 
-  // 4. Gap styles for horizontal spacing between children
+  // 5. Gap styles for horizontal spacing between children
   const gapTdStyle: React.CSSProperties = {
     width: config.gap || "0",
     lineHeight: "1px",
@@ -120,25 +138,23 @@ function Row({ children, config, devNode }: RowProps) {
     >
       <tbody>
         <tr>
+          {/* Outer TD: Background, Border Radius, Width, Height */}
           <td
             style={backgroundTdStyle}
             {...(config.height && { height: config.height })}
           >
+            {/* Inner Table: Border and Border Radius */}
             <table
-              aria-label="Row Padding Wrapper"
+              aria-label="Row Border Wrapper"
               role="presentation"
               cellPadding={0}
               cellSpacing={0}
               border={0}
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "100%",
-                borderCollapse: "collapse",
-              }}
+              style={borderTableStyle}
             >
               <tbody>
                 <tr>
+                  {/* Padding TD */}
                   <td style={paddingTdStyle}>
                     <table
                       aria-label="Row Justification Wrapper"

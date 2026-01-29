@@ -175,21 +175,31 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
     borderCollapse: "collapse",
   };
 
-  const middleTableStyle: CSSProperties = {
-    width: "100%",
-    maxWidth: widthType === "fixed" ? config.width || "600px" : undefined,
-    borderCollapse: "separate",
-    borderRadius: config.borderRadius,
+  // 1. Background TD Style - Background color, border radius, background image
+  const backgroundTdStyle: CSSProperties = {
     backgroundColor: config.backgroundColor,
-    ...getBorderStyle(config.border),
+    borderRadius: config.borderRadius,
+    maxWidth: widthType === "fixed" ? config.width || "600px" : undefined,
     backgroundImage: config.backgroundImage
       ? `url(${config.backgroundImage.src})`
       : undefined,
     backgroundRepeat: config.backgroundImage?.repeat,
     backgroundSize: config.backgroundImage?.size,
     backgroundPosition: config.backgroundImage?.position,
+    // Overflow hidden to clip background to border-radius
+    ...(config.borderRadius && { overflow: "hidden" }),
   };
 
+  // 2. Border Table Style - Border and border radius
+  const borderTableStyle: CSSProperties = {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    borderRadius: config.borderRadius,
+    ...getBorderStyle(config.border),
+  };
+
+  // 3. Padding TD Style
   const innerTdStyle: CSSProperties = {
     padding: config.padding,
     width: "100%",
@@ -291,6 +301,7 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
           <td align={justifyAlign}>
             <div dangerouslySetInnerHTML={{ __html: msoFixedWrapper }} />
 
+            {/* Outer table for width constraint */}
             <table
               className={[
                 widthType === "fixed" ? "container-fixed-width" : undefined,
@@ -304,22 +315,46 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
               role="presentation"
               border={0}
               align={justifyAlign}
-              style={middleTableStyle}
+              style={{
+                width: "100%",
+                maxWidth:
+                  widthType === "fixed" ? config.width || "600px" : undefined,
+                borderCollapse: "collapse",
+              }}
               width={containerWidthAttr}
             >
               <tbody>
                 <tr>
-                  <td style={innerTdStyle}>
+                  {/* Background TD: Background color, border radius, background image */}
+                  <td style={backgroundTdStyle}>
+                    {/* Border Table: Border and border radius */}
                     <table
-                      aria-label={`Container | Content Table`}
+                      aria-label={`Container | Border Wrapper`}
                       cellPadding={0}
                       cellSpacing={0}
                       role="presentation"
                       border={0}
-                      style={contentTableStyle}
+                      style={borderTableStyle}
                     >
                       <tbody>
-                        <tr>{rowElements}</tr>
+                        <tr>
+                          {/* Padding TD */}
+                          <td style={innerTdStyle}>
+                            {/* Content Table */}
+                            <table
+                              aria-label={`Container | Content Table`}
+                              cellPadding={0}
+                              cellSpacing={0}
+                              role="presentation"
+                              border={0}
+                              style={contentTableStyle}
+                            >
+                              <tbody>
+                                <tr>{rowElements}</tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </td>
