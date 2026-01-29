@@ -1,4 +1,4 @@
-# @pagenflow/email
+![Builder Introduction](./repo-header-image.png)
 
 **The bridge between visual email building and high-performance React code.**
 
