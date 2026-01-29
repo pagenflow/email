@@ -14,8 +14,6 @@ Email development shouldn't feel like it’s stuck in 1999. While `react-email` 
 * **React Email Compatible:** Every component in this package works seamlessly with `@react-email/render` and the React Email preview server.
 * **Prop-Driven Configuration:** Instead of messy inline styles, we use a structured `config` prop to manage all styling and layout logic.
 
----
-
 ## 📦 Installation
 
 ```bash
@@ -24,8 +22,6 @@ npm install @pagenflow/email
 yarn add @pagenflow/email
 
 ```
-
----
 
 ## 🧩 Components Reference
 
@@ -48,8 +44,6 @@ Pagenflow components use a consistent `config` prop pattern to handle styling an
 * **`Button`**: High-conversion CTA buttons with built-in VML support for Outlook. Configurable `backgroundColor`, `borderRadius`, and `padding`.
 * **`Divider`**: A customizable horizontal rule with `config` for height, color, and vertical margins.
 * **`Spacer`**: Fine-tuned vertical control to create exactly the right amount of breathing room.
-
----
 
 ## 🛠 Usage Example
 
@@ -103,8 +97,6 @@ export default function WelcomeEmail() {
 
 ```
 
----
-
 ## 🎨 Visual Builder
 
 Stop guessing how your padding looks. Use our **Visual Email Editor** to build your templates:
@@ -114,8 +106,6 @@ Stop guessing how your padding looks. Use our **Visual Email Editor** to build y
 1. Drag components onto the canvas.
 2. Customize styles with the sidebar.
 3. **Copy the React code** and paste it into your project using this package.
-
----
 
 ## 📄 License
 
