@@ -1,4 +1,4 @@
-import _ from "lodash";
+import isEqual from "./isEqual";
 
 /**
  * Generic deep equality comparison function for React component props.
@@ -11,7 +11,7 @@ export function arePropsEqual<T extends Record<string, any>>(
   prevProps: T,
   nextProps: T
 ): boolean {
-  return _.isEqual(prevProps, nextProps);
+  return isEqual(prevProps, nextProps);
 }
 
 /**
@@ -20,7 +20,7 @@ export function arePropsEqual<T extends Record<string, any>>(
  * 
  * @example
  * export default memo(MyComponent, (prev, next) => 
- *   arePropsEqualExcept(prev, next, ['onCallback'])
+ *    arePropsEqualExcept(prev, next, ['onCallback'])
  * );
  */
 export function arePropsEqualExcept<T extends Record<string, any>>(
@@ -28,9 +28,9 @@ export function arePropsEqualExcept<T extends Record<string, any>>(
   nextProps: T,
   excludeKeys: (keyof T)[]
 ): boolean {
-  const prevFiltered = _.omit(prevProps, excludeKeys);
-  const nextFiltered = _.omit(nextProps, excludeKeys);
-  return _.isEqual(prevFiltered, nextFiltered);
+  const prevFiltered = omit(prevProps, excludeKeys);
+  const nextFiltered = omit(nextProps, excludeKeys);
+  return isEqual(prevFiltered, nextFiltered);
 }
 
 /**
@@ -47,7 +47,25 @@ export function arePropsEqualOnly<T extends Record<string, any>>(
   nextProps: T,
   includeKeys: (keyof T)[]
 ): boolean {
-  const prevFiltered = _.pick(prevProps, includeKeys);
-  const nextFiltered = _.pick(nextProps, includeKeys);
-  return _.isEqual(prevFiltered, nextFiltered);
+  const prevFiltered = pick(prevProps, includeKeys);
+  const nextFiltered = pick(nextProps, includeKeys);
+  return isEqual(prevFiltered, nextFiltered);
+}
+
+function pick<T extends object, K extends keyof T>(data: T, keys: K[]): Pick<T, K> {
+  const r = {} as Pick<T, K>;
+  for (const key of keys) {
+    if (key in data) {
+      r[key] = data[key];
+    }
+  }
+  return r;
+}
+
+function omit<T extends object, K extends keyof T>(data: T, keys: K[]): Omit<T, K> {
+  const r = { ...data };
+  for (const key of keys) {
+    delete r[key];
+  }
+  return r;
 }
