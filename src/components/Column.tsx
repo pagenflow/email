@@ -146,6 +146,83 @@ function Column({ children, config, devNode }: ColumnProps) {
     width: "100%",
   };
 
+  // Main content rendering
+  const renderContent = () => (
+    <table
+      aria-label="Column Padding"
+      role="presentation"
+      cellPadding={0}
+      cellSpacing={0}
+      border={0}
+      style={innerTableStyle}
+    >
+      <tbody>
+        <tr>
+          {/* Inner TD: Padding and Vertical Alignment */}
+          <td
+            style={innerTdStyle}
+            valign={
+              config.justifyContent ? vAlignMap[config.justifyContent] : "top"
+            }
+            align={config.alignItems ? alignMap[config.alignItems] : "left"}
+            {...(config.height && { height: config.height })}
+          >
+            {/* Content wrapper for gap support */}
+            {config.gap && numChildren > 1 ? (
+              <table
+                aria-label="Column Gap Wrapper"
+                role="presentation"
+                cellPadding={0}
+                cellSpacing={0}
+                border={0}
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                }}
+              >
+                <tbody>
+                  {childrenArray.map((child, index) => (
+                    <Fragment key={`col-child-${index}`}>
+                      <tr>
+                        <td
+                          style={{
+                            verticalAlign: config.alignItems
+                              ? alignMap[config.alignItems]
+                              : "top",
+                          }}
+                          valign={
+                            config.justifyContent
+                              ? vAlignMap[config.justifyContent]
+                              : "top"
+                          }
+                          align={
+                            config.alignItems
+                              ? alignMap[config.alignItems]
+                              : "left"
+                          }
+                        >
+                          {child}
+                        </td>
+                      </tr>
+                      {/* Add gap spacer between children (not after last child) */}
+                      {index < numChildren - 1 && (
+                        <tr>
+                          <td style={gapSpacerStyle}>&nbsp;</td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              children
+            )}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+
   return (
     <table
       aria-label="Column Wrapper"
@@ -167,84 +244,7 @@ function Column({ children, config, devNode }: ColumnProps) {
             {...(config.width && { width: config.width })}
             {...(config.height && { height: config.height })}
           >
-            {/* Inner Table: Used to cleanly separate background/border from padding */}
-            <table
-              aria-label="Column Padding"
-              role="presentation"
-              cellPadding={0}
-              cellSpacing={0}
-              border={0}
-              style={innerTableStyle}
-            >
-              <tbody>
-                <tr>
-                  {/* Inner TD: Padding and Vertical Alignment */}
-                  <td
-                    style={innerTdStyle}
-                    valign={
-                      config.justifyContent
-                        ? vAlignMap[config.justifyContent]
-                        : "top"
-                    }
-                    align={
-                      config.alignItems ? alignMap[config.alignItems] : "left"
-                    }
-                    {...(config.height && { height: config.height })}
-                  >
-                    {/* Content wrapper for gap support */}
-                    {config.gap && numChildren > 1 ? (
-                      <table
-                        aria-label="Column Gap Wrapper"
-                        role="presentation"
-                        cellPadding={0}
-                        cellSpacing={0}
-                        border={0}
-                        style={{
-                          width: "100%",
-                          borderCollapse: "collapse",
-                        }}
-                      >
-                        <tbody>
-                          {childrenArray.map((child, index) => (
-                            <Fragment key={`col-child-${index}`}>
-                              <tr>
-                                <td
-                                  style={{
-                                    verticalAlign: config.alignItems
-                                      ? alignMap[config.alignItems]
-                                      : "top",
-                                  }}
-                                  valign={
-                                    config.justifyContent
-                                      ? vAlignMap[config.justifyContent]
-                                      : "top"
-                                  }
-                                  align={
-                                    config.alignItems
-                                      ? alignMap[config.alignItems]
-                                      : "left"
-                                  }
-                                >
-                                  {child}
-                                </td>
-                              </tr>
-                              {/* Add gap spacer between children (not after last child) */}
-                              {index < numChildren - 1 && (
-                                <tr>
-                                  <td style={gapSpacerStyle}>&nbsp;</td>
-                                </tr>
-                              )}
-                            </Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      children
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            {renderContent()}
           </td>
         </tr>
       </tbody>

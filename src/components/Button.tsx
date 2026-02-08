@@ -185,7 +185,7 @@ function Button({ config, devMode }: ButtonProps) {
 
         // base
         boxSizing: "border-box",
-        border: "0 solid",
+        border: 0,
         margin: 0,
         padding: 0,
       }}
@@ -196,7 +196,7 @@ function Button({ config, devMode }: ButtonProps) {
           <td
             dangerouslySetInnerHTML={{
               __html: `
-      ${vmlButton}
+      ${devMode ? "" : vmlButton}
       <!--[if !mso]><!-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
@@ -206,11 +206,17 @@ function Button({ config, devMode }: ButtonProps) {
                 <tbody>
                   <tr>
                     <td style="padding: ${padding};">
-                      <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${textDecoration}; display: ${linkStyle.display}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-align: ${textAlign}; white-space: ${whiteSpace};">
-                        <span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-decoration: ${textDecoration}; white-space: ${whiteSpace};">
-                          ${typeof children === "string" ? children : ""}
-                        </span>
-                      </a>
+                      ${
+                        devMode
+                          ? `<span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-decoration: ${textDecoration}; white-space: ${whiteSpace}; display: ${linkStyle.display}; text-align: ${textAlign}; word-break: ${linkStyle.wordBreak};">
+                              ${typeof children === "string" ? children : ""}
+                            </span>`
+                          : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${textDecoration}; display: ${linkStyle.display}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-align: ${textAlign}; white-space: ${whiteSpace};">
+                              <span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-decoration: ${textDecoration}; white-space: ${whiteSpace};">
+                                ${typeof children === "string" ? children : ""}
+                              </span>
+                            </a>`
+                      }
                     </td>
                   </tr>
                 </tbody>

@@ -144,6 +144,15 @@ export default function Head({
           margin: 0 !important;
         }
         /* ================================================= */
+
+        /* ================================================= */
+        /* 🔒 HEADING STYLE RESET */
+        h1, h2, h3, h4, h5, h6 {
+          margin: 0;
+          padding: 0;
+          font-weight: inherit; /* Disables browser defaults */
+        }
+        /* ================================================= */
     `;
 
   return (

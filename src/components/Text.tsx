@@ -43,12 +43,18 @@ export interface TextConfig {
 
   /** Background color of the text block. */
   backgroundColor?: string;
+
+  /** Opacity of the text (e.g., '0.5', '1'). */
+  opacity?: string | number;
+
+  /** White space handling (e.g., 'normal', 'nowrap', 'pre', 'pre-wrap'). */
+  whiteSpace?: string;
 }
 
 export type TextProps = {
   config: TextConfig;
   devMode?: ReactNode;
-  children?:ReactNode
+  children?: ReactNode;
 };
 
 function Text({ config, devMode, children }: TextProps) {
@@ -67,6 +73,8 @@ function Text({ config, devMode, children }: TextProps) {
     direction,
     verticalAlign,
     backgroundColor,
+    opacity,
+    whiteSpace,
   } = config;
 
   // 1. TD Style: Where padding and background are reliably applied.
@@ -92,6 +100,8 @@ function Text({ config, devMode, children }: TextProps) {
     textDecoration: textDecoration,
     direction: direction as any,
     verticalAlign: verticalAlign,
+    opacity: opacity,
+    whiteSpace: whiteSpace as any,
     margin: "0", // Crucial: Remove default margin from <p> tags
     padding: "0",
     fontFamily: "Arial, Helvetica, sans-serif", // Use a widely supported font stack
