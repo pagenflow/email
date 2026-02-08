@@ -19,8 +19,15 @@ const alignMap: Record<AlignItems, TdValign> = {
   end: "bottom",
 };
 
+export interface BackgroundImageType {
+  src: string;
+  repeat?: "no-repeat" | "repeat" | "repeat-x" | "repeat-y";
+  size?: "auto" | "cover" | "contain";
+  position?: string;
+}
+
 export interface RowConfig {
-  gap?: string; // Now supports both horizontal gap between children AND vertical gap for nested rows
+  gap?: string;
   justifyContent?: JustifyContent;
   alignItems?: AlignItems;
   width?: string;
@@ -29,6 +36,7 @@ export interface RowConfig {
   // Styling props
   padding?: string;
   backgroundColor?: string;
+  backgroundImage?: BackgroundImageType;
   borderRadius?: string;
   border?: BorderConfig;
 }
@@ -77,6 +85,14 @@ function Row({ children, config, devNode }: RowProps) {
     borderRadius: config.borderRadius,
     width: config.width || "100%",
     height: config.height,
+
+    // Background Image styles
+    backgroundImage: config.backgroundImage
+      ? `url(${config.backgroundImage.src})`
+      : undefined,
+    backgroundRepeat: config.backgroundImage?.repeat,
+    backgroundSize: config.backgroundImage?.size,
+    backgroundPosition: config.backgroundImage?.position,
 
     // Overflow hidden to clip background to border-radius
     ...(config.borderRadius && { overflow: "hidden" }),
@@ -138,7 +154,7 @@ function Row({ children, config, devNode }: RowProps) {
     >
       <tbody>
         <tr>
-          {/* Outer TD: Background, Border Radius, Width, Height */}
+          {/* Outer TD: Background, Background Image, Border Radius, Width, Height */}
           <td
             style={backgroundTdStyle}
             {...(config.height && { height: config.height })}
