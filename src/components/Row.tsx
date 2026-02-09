@@ -39,6 +39,12 @@ export interface RowConfig {
   backgroundImage?: BackgroundImageType;
   borderRadius?: string;
   border?: BorderConfig;
+
+  // Mobile specific overrides
+  mobile?: {
+    justifyContent?: JustifyContent;
+    alignItems?: AlignItems;
+  };
 }
 
 export type RowProps = {
@@ -151,6 +157,9 @@ function Row({ children, config, devNode }: RowProps) {
         borderCollapse: "collapse",
       }}
       {...(config.height && { height: config.height })}
+      data-mobile-justify={config.mobile?.justifyContent}
+      data-mobile-align={config.mobile?.alignItems}
+      className="responsive-row"
     >
       <tbody>
         <tr>
@@ -195,9 +204,10 @@ function Row({ children, config, devNode }: RowProps) {
                               border={0}
                               style={contentTableStyle}
                               {...(config.height && { height: config.height })}
+                              className="content-table"
                             >
                               <tbody>
-                                <tr>
+                                <tr className="content-tr">
                                   {/* Horizontal layout with gap support */}
                                   {childrenArray.map((child, index) => (
                                     <Fragment key={`row-child-${index}`}>
@@ -209,6 +219,7 @@ function Row({ children, config, devNode }: RowProps) {
                                           padding: "0",
                                           margin: "0",
                                         }}
+                                        className="child-cell"
                                       >
                                         {child}
                                       </td>

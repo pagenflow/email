@@ -107,6 +107,36 @@ export default function HeadDev({
                 }
             }
 
+            /* Row aligment on mobile - Using container query */
+            @container builder-canvas (max-width: 600px) {
+              /* 1. Handling Mobile Alignment (Justify) */
+              /* We target the inner table alignment */
+              .responsive-row[data-mobile-justify="center"] .content-table {
+                margin: 0 auto !important;
+                float: none !important;
+              }
+              .responsive-row[data-mobile-justify="start"] .content-table {
+                margin: 0 !important;
+                float: left !important;
+              }
+              .responsive-row[data-mobile-justify="end"] .content-table {
+                margin: 0 0 0 auto !important;
+                float: right !important;
+              }
+
+              /* 2. Handling Mobile Vertical Alignment (Align Items) */
+              /* We target the child cells if they are still side-by-side */
+              .responsive-row[data-mobile-align="center"] .child-cell {
+                vertical-align: middle !important;
+              }
+              .responsive-row[data-mobile-align="start"] .child-cell {
+                vertical-align: top !important;
+              }
+              .responsive-row[data-mobile-align="end"] .child-cell {
+                vertical-align: bottom !important;
+              }
+            }
+
             /* ================================================= */
             /* 🔒 HEADING STYLE RESET */
             h1, h2, h3, h4, h5, h6 {
