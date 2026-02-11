@@ -26,35 +26,35 @@ export interface HeadingConfig {
   /** Font weight (e.g., 'normal', 'bold', or '700'). */
   fontWeight?: string;
 
-  /** Font style (e.g., 'italic'). */ // ADDED
+  /** Font style (e.g., 'italic'). */
   fontStyle?: string;
 
   /** Line height (e.g., '1.3' or '30px'). */
   lineHeight?: string;
-  
-  /** Letter spacing (e.g., '0.5px', '1px'). */ // ADDED
+
+  /** Letter spacing (e.g., '0.5px', '1px'). */
   letterSpacing?: string;
 
-  /** Text transform (e.g., 'uppercase', 'lowercase', 'capitalize'). */ // ADDED
+  /** Text transform (e.g., 'uppercase', 'lowercase', 'capitalize'). */
   textTransform?: string;
 
-  /** Text decoration (e.g., 'underline', 'line-through'). */ // ADDED
+  /** Text decoration (e.g., 'underline', 'line-through'). */
   textDecoration?: string;
 
-  /** Text direction (e.g., 'ltr', 'rtl'). */ // ADDED
+  /** Text direction (e.g., 'ltr', 'rtl'). */
   direction?: string;
-  
-  /** Vertical alignment (e.g., 'sub', 'super'). Applied to content wrapper in Text, applied to TD here for alignment. */ // ADDED
+
+  /** Vertical alignment (e.g., 'sub', 'super'). Applied to content wrapper in Text, applied to TD here for alignment. */
   verticalAlign?: string;
-  
-  /** Background color of the heading block. */ // ADDED
+
+  /** Background color of the heading block. */
   backgroundColor?: string;
 }
 
 export type HeadingProps = {
   config: HeadingConfig;
   devMode?: ReactNode;
-  children?:ReactNode;
+  children?: ReactNode;
 };
 
 function Heading({ config, devMode, children }: HeadingProps) {
@@ -75,6 +75,10 @@ function Heading({ config, devMode, children }: HeadingProps) {
     verticalAlign,
     backgroundColor,
   } = config;
+
+  // Determine the content to render
+  const content = text ?? children;
+  const isString = typeof content === "string";
 
   // 1. TD Style: Where padding, background, width, and verticalAlign are applied.
   const tdStyle: CSSProperties = {
@@ -106,7 +110,6 @@ function Heading({ config, devMode, children }: HeadingProps) {
 
     // Outlook specific fixes (using string indexing)
     ["msoLineHeightRule" as string]: "exactly",
-    // ["mso-line-height-rule" as string]: "exactly",
   };
 
   // Dynamically create the Heading element
@@ -130,10 +133,14 @@ function Heading({ config, devMode, children }: HeadingProps) {
           {/* TD: Applies Padding, Background, and Alignment */}
           <td style={tdStyle} align={textAlign as "left" | "center" | "right"}>
             {/* The actual Heading Tag with all inline styles */}
-            <HeadingTag
-              style={headingStyle}
-              dangerouslySetInnerHTML={{ __html: text ?? children ?? "" }}
-            />
+            {isString ? (
+              <HeadingTag
+                style={headingStyle}
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            ) : (
+              <HeadingTag style={headingStyle}>{content}</HeadingTag>
+            )}
           </td>
         </tr>
       </tbody>
