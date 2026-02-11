@@ -85,9 +85,7 @@ function Text({ config, devMode, children }: TextProps) {
     verticalAlign: "top",
   };
 
-  // 2. Content Style: Applied directly to a wrapper element (like a <div> or <p>)
-  // or inherited by the children. For max compatibility, we apply core styles
-  // directly to the TD or a wrapper <p> (if children is just a string).
+  // 2. Content Style: Applied directly to a wrapper element
   const contentStyle: CSSProperties = {
     color: color,
     textAlign: textAlign,
@@ -102,13 +100,16 @@ function Text({ config, devMode, children }: TextProps) {
     verticalAlign: verticalAlign,
     opacity: opacity,
     whiteSpace: whiteSpace as any,
-    margin: "0", // Crucial: Remove default margin from <p> tags
+    margin: "0",
     padding: "0",
-    fontFamily: "Arial, Helvetica, sans-serif", // Use a widely supported font stack
+    fontFamily: "Arial, Helvetica, sans-serif",
   };
 
+  // Determine content to render
+  const content = text ?? children;
+  const isString = typeof content === "string";
+
   return (
-    // Wrap the text content in a table for padding/background/width management.
     <table
       aria-label="Text Block Wrapper"
       role="presentation"
@@ -122,16 +123,15 @@ function Text({ config, devMode, children }: TextProps) {
     >
       <tbody>
         <tr>
-          {/* TD: Applies Padding, Background, and Alignment */}
           <td style={tdStyle} align={textAlign as "left" | "center" | "right"}>
-            {/* Apply core text styles to a wrapper element.
-              We use a simple <span> or <div> wrapper here to hold the styles 
-              and then render the children inside it.
-            */}
-            <div
-              style={contentStyle}
-              dangerouslySetInnerHTML={{ __html: text ?? children ?? "" }}
-            />
+            {isString ? (
+              <div
+                style={contentStyle}
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            ) : (
+              <div style={contentStyle}>{content}</div>
+            )}
           </td>
         </tr>
       </tbody>

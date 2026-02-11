@@ -71,7 +71,7 @@ export default function HeadDev({
             /* ------------------------------------- */
 
             /* Responsive container styles - Using container query */
-            @container builder-canvas (max-width: 600px) {
+            @container builder-canvas (max-width: 768px) {
                 /* Target the middle table wrapper, or give the container an identifiable class */
                 .container-fixed-width {
                     width: 100% !important;
@@ -80,7 +80,7 @@ export default function HeadDev({
             }
 
             /* Stack columns on mobile - Using container query */
-            @container builder-canvas (max-width: 600px) {
+            @container builder-canvas (max-width: 768px) {
                 /* 1. Force the individual column cells to stack */
                 .stack-td {
                     width: 100% !important;
@@ -108,8 +108,8 @@ export default function HeadDev({
             }
 
             /* Row aligment on mobile - Using container query */
-            @container builder-canvas (max-width: 600px) {
-              /* 1. Handling Mobile Alignment (Justify) */
+            @container builder-canvas (max-width: 768px) {
+              /* 1. Handling Mobile Alignment (Justify) - Works for both wrapped and non-wrapped */
               /* We target the inner table alignment */
               .responsive-row[data-mobile-justify="center"] .content-table {
                 margin: 0 auto !important;
@@ -124,16 +124,103 @@ export default function HeadDev({
                 float: right !important;
               }
 
+              /* Mobile justify for wrapped children - we need to target the outer wrapper td */
+              .responsive-row[data-mobile-wrap="true"][data-mobile-justify="center"] td[align] {
+                text-align: center !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-mobile-justify="start"] td[align] {
+                text-align: left !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-mobile-justify="end"] td[align] {
+                text-align: right !important;
+              }
+
+              /* Also apply to child content tables for better support */
+              .responsive-row[data-mobile-wrap="true"][data-mobile-justify="center"] .child-cell table {
+                margin-left: auto !important;
+                margin-right: auto !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-mobile-justify="start"] .child-cell table {
+                margin-left: 0 !important;
+                margin-right: auto !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-mobile-justify="end"] .child-cell table {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+              }
+
               /* 2. Handling Mobile Vertical Alignment (Align Items) */
-              /* We target the child cells if they are still side-by-side */
-              .responsive-row[data-mobile-align="center"] .child-cell {
+              /* For non-wrapped rows - controls vertical alignment when cells are side-by-side */
+              .responsive-row[data-mobile-align="center"]:not([data-mobile-wrap="true"]) .child-cell {
                 vertical-align: middle !important;
               }
-              .responsive-row[data-mobile-align="start"] .child-cell {
+              .responsive-row[data-mobile-align="start"]:not([data-mobile-wrap="true"]) .child-cell {
                 vertical-align: top !important;
               }
-              .responsive-row[data-mobile-align="end"] .child-cell {
+              .responsive-row[data-mobile-align="end"]:not([data-mobile-wrap="true"]) .child-cell {
                 vertical-align: bottom !important;
+              }
+
+              /* For wrapped rows - alignItems controls vertical alignment of content within each child cell */
+              .responsive-row[data-mobile-wrap="true"][data-mobile-align="center"] .child-cell {
+                vertical-align: middle !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-mobile-align="start"] .child-cell {
+                vertical-align: top !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-mobile-align="end"] .child-cell {
+                vertical-align: bottom !important;
+              }
+                
+              /* 3. Handling Mobile Wrap - Pure CSS Solution */
+              /* Force table to act like block container */
+              .responsive-row[data-mobile-wrap="true"] .content-table {
+                width: 100% !important;
+                max-width: 100% !important;
+              }
+              
+              /* Force table row to stack cells */
+              .responsive-row[data-mobile-wrap="true"] .content-tr {
+                display: block !important;
+              }
+              
+              /* Force each child cell to be full width block */
+              .responsive-row[data-mobile-wrap="true"] .child-cell {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+              }
+              
+              /* Hide horizontal gap cells and create vertical spacing with padding */
+              .responsive-row[data-mobile-wrap="true"] .row-gap-td {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+              }
+              
+              /* Add vertical spacing between stacked cells using margin */
+              .responsive-row[data-mobile-wrap="true"] .child-cell:not(:last-child) {
+                margin-bottom: 20px !important;
+              }
+              
+              /* Dynamic gap support - common values */
+              .responsive-row[data-mobile-wrap="true"][data-gap="10px"] .child-cell:not(:last-child) {
+                margin-bottom: 10px !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-gap="15px"] .child-cell:not(:last-child) {
+                margin-bottom: 15px !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-gap="20px"] .child-cell:not(:last-child) {
+                margin-bottom: 20px !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-gap="24px"] .child-cell:not(:last-child) {
+                margin-bottom: 24px !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-gap="30px"] .child-cell:not(:last-child) {
+                margin-bottom: 30px !important;
+              }
+              .responsive-row[data-mobile-wrap="true"][data-gap="40px"] .child-cell:not(:last-child) {
+                margin-bottom: 40px !important;
               }
             }
 

@@ -44,6 +44,7 @@ export interface RowConfig {
   mobile?: {
     justifyContent?: JustifyContent;
     alignItems?: AlignItems;
+    wrap?: boolean;
   };
 }
 
@@ -159,6 +160,8 @@ function Row({ children, config, devNode }: RowProps) {
       {...(config.height && { height: config.height })}
       data-mobile-justify={config.mobile?.justifyContent}
       data-mobile-align={config.mobile?.alignItems}
+      data-mobile-wrap={config.mobile?.wrap ? "true" : undefined}
+      data-gap={config.gap}
       className="responsive-row"
     >
       <tbody>
@@ -231,6 +234,7 @@ function Row({ children, config, devNode }: RowProps) {
                                             key={`row-gap-${index}`}
                                             width={config.gap}
                                             style={gapTdStyle}
+                                            className="row-gap-td"
                                           >
                                             &nbsp;
                                           </td>

@@ -37,4 +37,7 @@ export type { SpacerProps, SpacerConfig } from './components/Spacer';
 export { default as Text } from './components/Text';
 export type { TextProps, TextConfig } from './components/Text';
 
+export { default as Icon } from './components/Icon';
+export type { IconProps, IconConfig } from './components/Icon';
+
 export * from "./types";
