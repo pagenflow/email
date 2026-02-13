@@ -207,7 +207,7 @@ function Row({ children, config, devNode }: RowProps) {
                               border={0}
                               style={contentTableStyle}
                               {...(config.height && { height: config.height })}
-                              className="content-table"
+                              className="content-table row-content-table"
                             >
                               <tbody>
                                 <tr className="content-tr">

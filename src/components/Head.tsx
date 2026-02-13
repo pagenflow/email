@@ -146,53 +146,55 @@ export default function Head({
           }
 
           /* 3. Handling Mobile Wrap - Pure CSS Solution */
+          /* Target only the direct row-content-table, not nested ones */
+          
           /* Force table to act like block container */
-          .responsive-row[data-mobile-wrap="true"] .content-table {
+          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table {
             width: 100% !important;
             max-width: 100% !important;
           }
           
           /* Force table row to stack cells */
-          .responsive-row[data-mobile-wrap="true"] .content-tr {
+          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr {
             display: block !important;
           }
           
           /* Force each child cell to be full width block */
-          .responsive-row[data-mobile-wrap="true"] .child-cell {
+          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell {
             display: block !important;
             width: 100% !important;
             box-sizing: border-box !important;
           }
           
           /* Hide horizontal gap cells and create vertical spacing with padding */
-          .responsive-row[data-mobile-wrap="true"] .row-gap-td {
+          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .row-gap-td {
             display: none !important;
             width: 0 !important;
             height: 0 !important;
           }
           
           /* Add vertical spacing between stacked cells using margin */
-          .responsive-row[data-mobile-wrap="true"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 20px !important;
           }
           
           /* Dynamic gap support - common values */
-          .responsive-row[data-mobile-wrap="true"][data-gap="10px"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"][data-gap="10px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 10px !important;
           }
-          .responsive-row[data-mobile-wrap="true"][data-gap="15px"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"][data-gap="15px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 15px !important;
           }
-          .responsive-row[data-mobile-wrap="true"][data-gap="20px"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"][data-gap="20px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 20px !important;
           }
-          .responsive-row[data-mobile-wrap="true"][data-gap="24px"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"][data-gap="24px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 24px !important;
           }
-          .responsive-row[data-mobile-wrap="true"][data-gap="30px"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"][data-gap="30px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 30px !important;
           }
-          .responsive-row[data-mobile-wrap="true"][data-gap="40px"] .child-cell:not(:last-child) {
+          .responsive-row[data-mobile-wrap="true"][data-gap="40px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 40px !important;
           }
         }
