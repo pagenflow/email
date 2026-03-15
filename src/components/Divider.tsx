@@ -16,6 +16,8 @@ export interface DividerConfig {
 
   /** Horizontal alignment of the divider. */
   align?: "left" | "center" | "right";
+
+  hideOnMobile?: boolean;
 }
 
 export type DividerProps = {
@@ -30,6 +32,7 @@ function Divider({ config, devNode }: DividerProps) {
     width = "100%",
     margin = "20px 0",
     align = "center",
+    hideOnMobile,
   } = config;
 
   // 1. Outer TD Style: Applies the vertical spacing (margin)
@@ -73,6 +76,7 @@ function Divider({ config, devNode }: DividerProps) {
         width: "100%",
         borderCollapse: "collapse",
       }}
+      className={hideOnMobile ? "hide-on-mobile" : undefined}
     >
       <tbody>
         <tr>

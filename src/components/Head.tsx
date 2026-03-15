@@ -7,12 +7,15 @@ export interface HeadProps {
   backgroundColor?: string;
   /** Subject line for the email title. */
   title?: string;
+  /** Array of gap values (e.g. ["8px", "12px", "48px"]) to generate mobile wrap margin-bottom rules */
+  rowGaps?: string[];
 }
 
 export default function Head({
   children,
   backgroundColor = "#ffffff",
   title = "Email Preview",
+  rowGaps = [],
 }: HeadProps) {
   // Outlook (MSO) Styles and Reset
   const msoResetStyles = `
@@ -58,6 +61,15 @@ export default function Head({
         }
 
         @media screen and (max-width: 768px) {
+          .hide-on-mobile {
+            display: none !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            mso-hide: all;
+          }
+        }
+
+        @media screen and (max-width: 768px) {
             .stack-td {
                 width: 100% !important;
                 display: block !important;
@@ -82,121 +94,73 @@ export default function Head({
         }
 
         @media only screen and (max-width: 768px) {
-          /* 1. Handling Mobile Alignment (Justify) - Works for both wrapped and non-wrapped */
-          /* We target the inner table alignment */
-          .responsive-row[data-mobile-justify="center"] .content-table {
+          /* 1. Handling Mobile Alignment (Justify) */
+          .row-content-table[data-mobile-justify="center"] {
             margin: 0 auto !important;
             float: none !important;
           }
-          .responsive-row[data-mobile-justify="start"] .content-table {
+          .row-content-table[data-mobile-justify="start"] {
             margin: 0 !important;
             float: left !important;
           }
-          .responsive-row[data-mobile-justify="end"] .content-table {
+          .row-content-table[data-mobile-justify="end"] {
             margin: 0 0 0 auto !important;
             float: right !important;
           }
 
-          /* Mobile justify for wrapped children - we need to target the outer wrapper td */
-          .responsive-row[data-mobile-wrap="true"][data-mobile-justify="center"] td[align] {
-            text-align: center !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-mobile-justify="start"] td[align] {
-            text-align: left !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-mobile-justify="end"] td[align] {
-            text-align: right !important;
-          }
-
-          /* Also apply to child content tables for better support */
-          .responsive-row[data-mobile-wrap="true"][data-mobile-justify="center"] .child-cell table {
-            margin-left: auto !important;
-            margin-right: auto !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-mobile-justify="start"] .child-cell table {
-            margin-left: 0 !important;
-            margin-right: auto !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-mobile-justify="end"] .child-cell table {
-            margin-left: auto !important;
-            margin-right: 0 !important;
-          }
-
           /* 2. Handling Mobile Vertical Alignment (Align Items) */
-          /* For non-wrapped rows - controls vertical alignment when cells are side-by-side */
-          .responsive-row[data-mobile-align="center"]:not([data-mobile-wrap="true"]) .child-cell {
+          .row-content-table[data-mobile-align="center"] .child-cell {
             vertical-align: middle !important;
           }
-          .responsive-row[data-mobile-align="start"]:not([data-mobile-wrap="true"]) .child-cell {
+          .row-content-table[data-mobile-align="start"] .child-cell {
             vertical-align: top !important;
           }
-          .responsive-row[data-mobile-align="end"]:not([data-mobile-wrap="true"]) .child-cell {
-            vertical-align: bottom !important;
-          }
-
-          /* For wrapped rows - alignItems controls vertical alignment of content within each child cell */
-          .responsive-row[data-mobile-wrap="true"][data-mobile-align="center"] .child-cell {
-            vertical-align: middle !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-mobile-align="start"] .child-cell {
-            vertical-align: top !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-mobile-align="end"] .child-cell {
+          .row-content-table[data-mobile-align="end"] .child-cell {
             vertical-align: bottom !important;
           }
 
           /* 3. Handling Mobile Wrap - Pure CSS Solution */
-          /* Target only the direct row-content-table, not nested ones */
           
-          /* Force table to act like block container */
-          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table {
+          /* Force table to be full width */
+          .row-content-table[data-mobile-wrap="true"] {
             width: 100% !important;
             max-width: 100% !important;
           }
           
           /* Force table row to stack cells */
-          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr {
+          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr {
             display: block !important;
           }
           
           /* Force each child cell to be full width block */
-          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell {
+          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr > .child-cell {
             display: block !important;
             width: 100% !important;
             box-sizing: border-box !important;
           }
           
-          /* Hide horizontal gap cells and create vertical spacing with padding */
-          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .row-gap-td {
+          /* Hide horizontal gap cells */
+          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr > .row-gap-td {
             display: none !important;
             width: 0 !important;
             height: 0 !important;
           }
           
           /* Add vertical spacing between stacked cells using margin */
-          .responsive-row[data-mobile-wrap="true"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
+          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr > .child-cell:not(:last-child) {
             margin-bottom: 20px !important;
           }
           
           /* Dynamic gap support - common values */
-          .responsive-row[data-mobile-wrap="true"][data-gap="10px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 10px !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-gap="15px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 15px !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-gap="20px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 20px !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-gap="24px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 24px !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-gap="30px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 30px !important;
-          }
-          .responsive-row[data-mobile-wrap="true"][data-gap="40px"] > tbody > tr > td > table > tbody > tr > td > table > tbody > tr > td > .row-content-table > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 40px !important;
-          }
+          ${["10px", "15px", "20px", "24px", "30px", "40px", ...rowGaps]
+            .filter((gap, index, self) => self.indexOf(gap) === index)
+            .map(
+              (gap) => `
+              .row-content-table[data-mobile-wrap="true"][data-gap="${gap}"] > tbody > .content-tr > .child-cell:not(:last-child) {
+                margin-bottom: ${gap} !important;
+              }`,
+            )
+            .join("\n")}
         }
         
         /* ================================================= */

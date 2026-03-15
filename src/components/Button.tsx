@@ -1,5 +1,6 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
+import { BorderConfig } from "../types";
 
 // Helper for alignment
 type TdAlign = "center" | "left" | "right";
@@ -23,8 +24,14 @@ export interface ButtonConfig {
   /** Border radius (e.g., "3px"). */
   borderRadius?: string;
 
+  /** Border configuration for outline buttons. */
+  border?: BorderConfig;
+
   /** Width of the button (e.g., "200px" or "100%"). */
   width?: string;
+
+  /** Maximum width of the button (e.g., "300px"). Text will wrap if content exceeds this. */
+  maxWidth?: string;
 
   /** Horizontal alignment within the container. */
   justifyContent?: "start" | "center" | "end";
@@ -75,6 +82,93 @@ const justifyMap: Record<
   end: "right",
 };
 
+function getBorderStyle(border?: BorderConfig): CSSProperties {
+  if (!border) return {};
+
+  const style: CSSProperties = {};
+
+  // If a full border is specified, apply it
+  if (border.width && border.style && border.color) {
+    style.border = `${border.width} ${border.style} ${border.color}`;
+  } else {
+    // If only individual borders are specified, explicitly set others to 'none'
+    // to prevent Outlook Classic from showing black borders
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      style.borderTop = "none";
+      style.borderRight = "none";
+      style.borderBottom = "none";
+      style.borderLeft = "none";
+    }
+  }
+
+  // Override with specific borders if provided
+  if (border.top) {
+    style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
+  }
+  if (border.right) {
+    style.borderRight = `${border.right.width} ${border.right.style} ${border.right.color}`;
+  }
+  if (border.bottom) {
+    style.borderBottom = `${border.bottom.width} ${border.bottom.style} ${border.bottom.color}`;
+  }
+  if (border.left) {
+    style.borderLeft = `${border.left.width} ${border.left.style} ${border.left.color}`;
+  }
+
+  return style;
+}
+
+function getBorderStyleString(border?: BorderConfig): string {
+  if (!border) return "";
+
+  const styles: string[] = [];
+
+  // If a full border is specified, apply it
+  if (border.width && border.style && border.color) {
+    styles.push(`border: ${border.width} ${border.style} ${border.color};`);
+  } else {
+    // If only individual borders are specified
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      styles.push("border-top: none;");
+      styles.push("border-right: none;");
+      styles.push("border-bottom: none;");
+      styles.push("border-left: none;");
+    }
+  }
+
+  // Override with specific borders if provided
+  if (border.top) {
+    styles.push(
+      `border-top: ${border.top.width} ${border.top.style} ${border.top.color};`,
+    );
+  }
+  if (border.right) {
+    styles.push(
+      `border-right: ${border.right.width} ${border.right.style} ${border.right.color};`,
+    );
+  }
+  if (border.bottom) {
+    styles.push(
+      `border-bottom: ${border.bottom.width} ${border.bottom.style} ${border.bottom.color};`,
+    );
+  }
+  if (border.left) {
+    styles.push(
+      `border-left: ${border.left.width} ${border.left.style} ${border.left.color};`,
+    );
+  }
+
+  return styles.join(" ");
+}
+
 function Button({ config, devMode }: ButtonProps) {
   const {
     href,
@@ -83,7 +177,9 @@ function Button({ config, devMode }: ButtonProps) {
     color = "#ffffff",
     padding = "12px 24px",
     borderRadius = "3px",
+    border,
     width,
+    maxWidth,
     justifyContent = "center",
     textAlign = "center",
     fontSize = "16px",
@@ -121,98 +217,226 @@ function Button({ config, devMode }: ButtonProps) {
     backgroundColor: backgroundColor,
     borderRadius: borderRadius,
     width: width || "auto",
+    ...(maxWidth && { maxWidth: maxWidth }),
     // Overflow hidden to clip background to border-radius
     ...(borderRadius && { overflow: "hidden" }),
   };
 
-  // --- VML Calculation and Code for Outlook Compatibility ---
+  // 3. Border styles
+  const borderStyle = getBorderStyle(border);
+  const borderStyleString = getBorderStyleString(border);
 
-  // VML needs fixed pixel height. We estimate it based on padding.
-  const numericPadding = parseInt(padding.split(" ")[0] || "12", 10);
-  const vmlHeight = numericPadding * 2 + 20; // Estimate height based on padding + font size
-  const vmlWidth = width ? parseInt(width, 10) : 200; // Default VML width (fixed)
+  // --- Determine Button Approach Based on Width ---
 
-  // VML colors must use the full hex format (e.g., #000000)
-  const vmlFillColor = backgroundColor.startsWith("#")
-    ? backgroundColor
-    : `#${backgroundColor}`;
+  // Check if width is percentage-based or not defined
+  const isPercentageWidth = !width || width.includes("%");
+  const useSimpleOutlookApproach = isPercentageWidth;
 
   const align = justifyMap[justifyContent];
 
-  // Build VML font styles
-  const vmlFontWeight = fontWeight || "bold";
-  const vmlFontStyle = fontStyle === "italic" ? "font-style:italic;" : "";
-  const vmlLetterSpacing = letterSpacing
-    ? `letter-spacing:${letterSpacing};`
-    : "";
-  const vmlTextTransform = textTransform
-    ? `text-transform:${textTransform};`
-    : "";
-  const vmlTextDecoration =
-    textDecoration && textDecoration !== "none"
-      ? `text-decoration:${textDecoration};`
-      : "";
-  const vmlWhiteSpace =
-    whiteSpace && whiteSpace !== "normal" ? `white-space:${whiteSpace};` : "";
+  // --- VML Calculation and Code for Outlook Compatibility (Fixed Width Only) ---
+  let vmlButton = "";
 
-  // VML code uses MSO conditional comments to render only in Outlook
-  const vmlButton = `
+  if (!useSimpleOutlookApproach) {
+    // Parse maxWidth if provided (always in px)
+    const maxWidthPx = maxWidth ? parseInt(maxWidth, 10) : null;
+
+    // VML needs fixed pixel height. We estimate it based on padding and potential wrapping.
+    const numericPadding = parseInt(padding.split(" ")[0] || "12", 10);
+    const numericFontSize = parseInt(fontSize, 10);
+    const numericLineHeight = lineHeight.includes("px")
+      ? parseInt(lineHeight, 10)
+      : numericFontSize * parseFloat(lineHeight);
+
+    // Trust user's explicit pixel width - no calculation needed
+    const vmlWidth = parseInt(width, 10);
+
+    // Calculate VML height - trust user's padding and let text wrap naturally
+    // VML v:textbox will handle text wrapping automatically
+    const textContent = typeof children === "string" ? children : "";
+    
+    // Estimate number of lines based on text length and button width
+    const horizontalPadding = padding.split(" ")[1]
+      ? parseInt(padding.split(" ")[1], 10) * 2
+      : numericPadding * 2;
+    
+    const availableTextWidth = vmlWidth - horizontalPadding;
+    const charWidthMultiplier =
+      fontWeight && parseInt(fontWeight) >= 500 ? 0.7 : 0.6;
+    const avgCharWidth = numericFontSize * charWidthMultiplier;
+    const charsPerLine = Math.max(
+      Math.floor(availableTextWidth / avgCharWidth),
+      1,
+    );
+    const numberOfLines = Math.max(
+      Math.ceil(textContent.length / charsPerLine),
+      1,
+    );
+
+    // Calculate height: vertical padding + (lines * line height) + extra buffer for VML
+    const textHeight = numberOfLines * numericLineHeight;
+    // Add extra 4px buffer to prevent bottom cropping in VML
+    const vmlHeight = Math.max(numericPadding * 2 + textHeight + 4, 40);
+
+    // VML colors must use the full hex format (e.g., #000000)
+    const vmlFillColor = backgroundColor.startsWith("#")
+      ? backgroundColor
+      : `#${backgroundColor}`;
+
+    // VML stroke color for border
+    const vmlStrokeColor = border?.color || vmlFillColor;
+    const vmlStrokeWeight = border?.width ? parseInt(border.width, 10) : 0;
+    const hasVmlStroke = vmlStrokeWeight > 0;
+
+    // Build VML font styles - consistent with other rendering paths
+    const vmlFontWeight = fontWeight || "500";
+    const vmlFontStyle = fontStyle === "italic" ? "font-style:italic;" : "";
+    const vmlLetterSpacing = letterSpacing
+      ? `letter-spacing:${letterSpacing};`
+      : "";
+    const vmlTextTransform = textTransform
+      ? `text-transform:${textTransform};`
+      : "";
+    const vmlTextDecoration =
+      textDecoration && textDecoration !== "none"
+        ? `text-decoration:${textDecoration};`
+        : "";
+    const vmlWhiteSpace = whiteSpace !== "normal" ? `white-space:${whiteSpace};` : "";
+
+    // VML code uses MSO conditional comments to render only in Outlook
+    // Use table with explicit MSO height for vertical centering
+    const horizontalPaddingValue = padding.split(" ")[1]
+      ? parseInt(padding.split(" ")[1], 10)
+      : numericPadding;
+
+    // For VML, we need to use a table inside to properly apply padding and centering
+    let vmlAlignAttr = "";
+    let vmlAlignStyle = "";
+    if (textAlign === "center") {
+      vmlAlignAttr = 'align="center"';
+    } else {
+      vmlAlignStyle = `text-align:${textAlign};`;
+    }
+
+    vmlButton = `
     <!--[if mso]>
-    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;v-text-anchor:middle;width:${vmlWidth}px;" arcsize="${(parseInt(borderRadius) / vmlHeight) * 100}%" strokecolor="${vmlFillColor}" fillcolor="${vmlFillColor}">
+    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;width:${vmlWidth}px;" arcsize="${Math.min((parseInt(borderRadius) / vmlHeight) * 100, 50)}%" strokecolor="${vmlStrokeColor}" ${hasVmlStroke ? `strokeweight="${vmlStrokeWeight}px"` : 'stroke="f"'} fillcolor="${vmlFillColor}">
       <w:anchorlock/>
-      <center style="color:${color};font-family:${fontFamily};font-size:${fontSize};font-weight:${vmlFontWeight};${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}">
-        ${typeof children === "string" ? children : ""}
-      </center>
+      <v:textbox inset="${horizontalPaddingValue}px,${numericPadding}px,${horizontalPaddingValue}px,${numericPadding}px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+          <tr>
+            <td ${vmlAlignAttr} valign="middle" style="${vmlAlignStyle}color:${color};font-family:${fontFamily};font-size:${fontSize};font-weight:${vmlFontWeight};${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}line-height:${lineHeight};mso-line-height-rule:exactly;">
+              ${typeof children === "string" ? children : ""}
+            </td>
+          </tr>
+        </table>
+      </v:textbox>
     </v:roundrect>
     <![endif]-->
   `;
+  }
+
+  // --- Simple Outlook Approach for Percentage Widths ---
+  let simpleOutlookButton = "";
+
+  if (useSimpleOutlookApproach) {
+    // Build consistent inline styles for text properties
+    const textDecorationStyle = textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : "";
+    const fontStyleProp = fontStyle ? `font-style: ${fontStyle};` : "";
+    const letterSpacingProp = letterSpacing ? `letter-spacing: ${letterSpacing};` : "";
+    const textTransformProp = textTransform ? `text-transform: ${textTransform};` : "";
+    const whiteSpaceProp = whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : "";
+    
+    simpleOutlookButton = `
+    <!--[if mso]>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
+      <tr>
+        <td align="${align}" style="padding: 0;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${width || "auto"}" style="border-collapse: collapse;">
+            <tr>
+              <td bgcolor="${backgroundColor}" align="${textAlign}" style="padding: ${padding}; text-align: ${textAlign}; border-radius: ${borderRadius}; ${borderStyleString}">
+                <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecorationStyle} display: block; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyleProp} line-height: ${lineHeight}; ${letterSpacingProp} ${textTransformProp} text-align: ${textAlign}; ${whiteSpaceProp} mso-line-height-rule: exactly;">
+                  ${typeof children === "string" ? children : ""}
+                </a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <![endif]-->
+  `;
+  }
 
   return (
-    // Outer table for alignment (center the button horizontally)
+    // Wrapper table for alignment - maintains proper positioning for hover indicators
     <table
       role="presentation"
       cellPadding={0}
       cellSpacing={0}
       border={0}
-      align={align} // This centers the table (and thus the button)
       style={{
-        // --- Start dev
-        position: "relative",
-        // --- End dev
-
-        width: width || "auto",
+        width: "100%",
         borderCollapse: "collapse",
-
-        // base
         boxSizing: "border-box",
         border: 0,
         margin: 0,
         padding: 0,
       }}
-      onClick={devMode ? (e) => e.preventDefault() : undefined}
     >
       <tbody>
         <tr>
           <td
-            dangerouslySetInnerHTML={{
-              __html: `
-      ${devMode ? "" : vmlButton}
+            align={align}
+            style={{
+              padding: 0,
+            }}
+          >
+            {/* Inner button table - this is the actual button structure */}
+            <table
+              role="presentation"
+              cellPadding={0}
+              cellSpacing={0}
+              border={0}
+              style={{
+                // --- Start dev
+                position: "relative",
+                // --- End dev
+
+                width: width || "auto",
+                ...(maxWidth && { maxWidth: maxWidth }),
+                borderCollapse: "collapse",
+
+                // base
+                boxSizing: "border-box",
+                border: 0,
+                margin: 0,
+                padding: 0,
+              }}
+              onClick={devMode ? (e) => e.preventDefault() : undefined}
+            >
+              <tbody>
+                <tr>
+                  <td
+                    dangerouslySetInnerHTML={{
+                      __html: `
+      ${devMode ? "" : useSimpleOutlookApproach ? simpleOutlookButton : vmlButton}
       <!--[if !mso]><!-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
           <tr>
-            <td style="background-color: ${backgroundTdStyle.backgroundColor}; border-radius: ${backgroundTdStyle.borderRadius}; width: ${backgroundTdStyle.width}; ${borderRadius ? "overflow: hidden;" : ""}">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; border-radius: ${borderRadius}; width: 100%;">
+            <td style="background-color: ${backgroundTdStyle.backgroundColor}; border-radius: ${backgroundTdStyle.borderRadius}; width: ${backgroundTdStyle.width}; ${maxWidth ? `max-width: ${maxWidth};` : ""} ${borderRadius ? "overflow: hidden;" : ""}">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; border-radius: ${borderRadius}; width: 100%; ${borderStyleString}">
                 <tbody>
                   <tr>
-                    <td style="padding: ${padding};">
+                    <td style="padding: 0;">
                       ${
                         devMode
-                          ? `<span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-decoration: ${textDecoration}; white-space: ${whiteSpace}; display: ${linkStyle.display}; text-align: ${textAlign}; word-break: ${linkStyle.wordBreak};">
+                          ? `<span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyle ? `font-style: ${fontStyle};` : ""} line-height: ${lineHeight}; ${letterSpacing ? `letter-spacing: ${letterSpacing};` : ""} ${textTransform ? `text-transform: ${textTransform};` : ""} ${textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : ""} ${whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : ""} display: ${linkStyle.display}; text-align: ${textAlign}; word-break: ${linkStyle.wordBreak}; padding: ${padding};">
                               ${typeof children === "string" ? children : ""}
                             </span>`
-                          : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: ${textDecoration}; display: ${linkStyle.display}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-align: ${textAlign}; white-space: ${whiteSpace};">
-                              <span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; font-style: ${fontStyle || "normal"}; line-height: ${lineHeight}; letter-spacing: ${letterSpacing || "normal"}; text-transform: ${textTransform || "none"}; text-decoration: ${textDecoration}; white-space: ${whiteSpace};">
+                          : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : "text-decoration: none;"} display: ${linkStyle.display}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyle ? `font-style: ${fontStyle};` : ""} line-height: ${lineHeight}; ${letterSpacing ? `letter-spacing: ${letterSpacing};` : ""} ${textTransform ? `text-transform: ${textTransform};` : ""} text-align: ${textAlign}; ${whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : ""} padding: ${padding};">
+                              <span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyle ? `font-style: ${fontStyle};` : ""} line-height: ${lineHeight}; ${letterSpacing ? `letter-spacing: ${letterSpacing};` : ""} ${textTransform ? `text-transform: ${textTransform};` : ""} ${textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : ""} ${whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : ""}">
                                 ${typeof children === "string" ? children : ""}
                               </span>
                             </a>`
@@ -227,8 +451,12 @@ function Button({ config, devMode }: ButtonProps) {
       </table>
       <!--<![endif]-->
     `,
-            }}
-          />
+                    }}
+                  />
+                </tr>
+              </tbody>
+            </table>
+          </td>
         </tr>
       </tbody>
     </table>

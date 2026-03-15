@@ -49,6 +49,9 @@ export interface TextConfig {
 
   /** White space handling (e.g., 'normal', 'nowrap', 'pre', 'pre-wrap'). */
   whiteSpace?: string;
+
+  /** Word break behavior (e.g., 'break-all', 'break-word', 'keep-all', 'normal'). */
+  wordBreak?: string;
 }
 
 export type TextProps = {
@@ -75,6 +78,7 @@ function Text({ config, devMode, children }: TextProps) {
     backgroundColor,
     opacity,
     whiteSpace,
+    wordBreak = "break-all",
   } = config;
 
   // 1. TD Style: Where padding and background are reliably applied.
@@ -100,6 +104,7 @@ function Text({ config, devMode, children }: TextProps) {
     verticalAlign: verticalAlign,
     opacity: opacity,
     whiteSpace: whiteSpace as any,
+    wordBreak: wordBreak as any,
     margin: "0",
     padding: "0",
     fontFamily: "Arial, Helvetica, sans-serif",

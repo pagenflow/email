@@ -1,4 +1,4 @@
-import { Fragment, memo, ReactNode } from "react";
+import { CSSProperties, Fragment, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
 
@@ -61,17 +61,30 @@ const alignMap: Record<NonNullable<ColumnConfig["alignItems"]>, Tdalign> = {
 };
 
 // Helper to convert border config to CSS border shorthand
-function getBorderStyle(border?: BorderConfig): React.CSSProperties {
+function getBorderStyle(border?: BorderConfig): CSSProperties {
   if (!border) return {};
 
-  const style: React.CSSProperties = {};
+  const style: CSSProperties = {};
 
-  // Check for unified border
+  // If a full border is specified, apply it
   if (border.width && border.style && border.color) {
     style.border = `${border.width} ${border.style} ${border.color}`;
+  } else {
+    // If only individual borders are specified, explicitly set others to 'none'
+    // to prevent Outlook Classic from showing black borders
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      style.borderTop = "none";
+      style.borderRight = "none";
+      style.borderBottom = "none";
+      style.borderLeft = "none";
+    }
   }
 
-  // Individual sides override unified border
+  // Override with specific borders if provided
   if (border.top) {
     style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
   }
@@ -95,14 +108,16 @@ function Column({ children, config, devNode }: ColumnProps) {
   ).filter((child) => child != null) as ReactNode[];
   const numChildren = childrenArray.length;
 
-  // 1. Outer table style: Takes up the full width/height of its parent TD
+  // 1. Outer table style: Takes up the full width/height of its parent TD.
+  //    height here drives the *total* outer height of the column.
   const outerTableStyle: React.CSSProperties = {
     width: "100%",
     height: config.height,
     borderCollapse: "collapse",
   };
 
-  // 2. Outer TD style: Background and Border Radius (no border here)
+  // 2. Outer TD style: Background and Border Radius (no border here).
+  //    height is set so the TD occupies the full declared height.
   const outerTdStyle: React.CSSProperties = {
     width: config.width,
     height: config.height,
@@ -121,20 +136,26 @@ function Column({ children, config, devNode }: ColumnProps) {
     ...(config.borderRadius && { overflow: "hidden" }),
   };
 
-  // 2b. Inner table style: Border and Border Radius
+  // 2b. Inner table style: Border and Border Radius.
+  //     height: 100% so it stretches to fill the outer TD's declared height.
   const innerTableStyle: React.CSSProperties = {
     width: "100%",
-    height: config.height,
-    borderCollapse: "separate", // Changed from collapse to separate for border-radius
+    height: "100%", // fill the outer TD rather than re-declaring the pixel value
+    borderCollapse: "separate",
     borderSpacing: 0,
     borderRadius: config.borderRadius,
     ...getBorderStyle(config.border),
   };
 
-  // 3. Inner TD style: Padding and Vertical Alignment
+  // 3. Inner TD style: Padding and Vertical Alignment only.
+  //    *** No height here. ***
+  //    The outer TD/table owns the height; padding is purely inner spacing,
+  //    so the total rendered height = declared height (padding is inside).
   const innerTdStyle: React.CSSProperties = {
     padding: config.padding,
-    height: config.height,
+    // height intentionally omitted — setting it here would make browsers
+    // treat it as content-box height and add padding on top, causing the
+    // total to exceed the declared height in preview mode.
     verticalAlign: config.alignItems ? alignMap[config.alignItems] : "top",
   };
 
@@ -158,14 +179,13 @@ function Column({ children, config, devNode }: ColumnProps) {
     >
       <tbody>
         <tr>
-          {/* Inner TD: Padding and Vertical Alignment */}
+          {/* Inner TD: Padding and Vertical Alignment only — no height */}
           <td
             style={innerTdStyle}
             valign={
               config.justifyContent ? vAlignMap[config.justifyContent] : "top"
             }
             align={config.alignItems ? alignMap[config.alignItems] : "left"}
-            {...(config.height && { height: config.height })}
           >
             {/* Content wrapper for gap support */}
             {config.gap && numChildren > 1 ? (
@@ -238,7 +258,7 @@ function Column({ children, config, devNode }: ColumnProps) {
     >
       <tbody>
         <tr>
-          {/* Outer TD: Background, Border, Border Radius, Width, Height */}
+          {/* Outer TD: Background, Border Radius, Width, Height */}
           <td
             style={outerTdStyle}
             {...(config.width && { width: config.width })}

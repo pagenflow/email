@@ -4,6 +4,7 @@ import { arePropsEqual } from "../utils/memoUtils";
 export interface SpacerConfig {
   /** The height of the vertical space (e.g., "20px"). Required. */
   height: string;
+  hideOnMobile?: boolean;
 }
 
 export type SpacerProps = {
@@ -12,7 +13,7 @@ export type SpacerProps = {
 };
 
 function Spacer({ config, devNode }: SpacerProps) {
-  const { height } = config;
+  const { height, hideOnMobile } = config;
 
   // 1. Spacer Table Style
   const spacerTableStyle: CSSProperties = {
@@ -22,7 +23,6 @@ function Spacer({ config, devNode }: SpacerProps) {
     border: "0",
     width: "100%",
 
-    // ✅ FIX: Use string literal indexing for MSO properties
     // Note the CSS standard dash convention: 'mso-table-lspace'
     // ["mso-table-lspace" as string]: "0pt",
     ["msoTableLspace" as string]: "0pt",
@@ -59,6 +59,7 @@ function Spacer({ config, devNode }: SpacerProps) {
       }}
       // Explicit HTML height attribute is necessary for Outlook reliability
       {...({ height: spacerHeightAttribute } as any)}
+      className={hideOnMobile ? "hide-on-mobile" : undefined}
     >
       <tbody>
         <tr>

@@ -1,4 +1,4 @@
-import { Fragment, memo, ReactNode } from "react";
+import { CSSProperties, Fragment, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import {
   AlignItems,
@@ -7,6 +7,7 @@ import {
   TdAlign,
   TdValign,
 } from "../types";
+import IInnerLink from "../types/IInnerLink";
 
 const justifyMap: Record<JustifyContent, TdAlign> = {
   start: "left",
@@ -40,6 +41,9 @@ export interface RowConfig {
   borderRadius?: string;
   border?: BorderConfig;
 
+  // Link support
+  innerLink?: IInnerLink;
+
   // Mobile specific overrides
   mobile?: {
     justifyContent?: JustifyContent;
@@ -52,17 +56,33 @@ export type RowProps = {
   children: ReactNode;
   config: RowConfig;
   devNode?: ReactNode;
+  devMode?: boolean;
 };
 
-function getBorderStyle(border?: BorderConfig): React.CSSProperties {
+function getBorderStyle(border?: BorderConfig): CSSProperties {
   if (!border) return {};
 
-  const style: React.CSSProperties = {};
+  const style: CSSProperties = {};
 
+  // If a full border is specified, apply it
   if (border.width && border.style && border.color) {
     style.border = `${border.width} ${border.style} ${border.color}`;
+  } else {
+    // If only individual borders are specified, explicitly set others to 'none'
+    // to prevent Outlook Classic from showing black borders
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      style.borderTop = "none";
+      style.borderRight = "none";
+      style.borderBottom = "none";
+      style.borderLeft = "none";
+    }
   }
 
+  // Override with specific borders if provided
   if (border.top) {
     style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
   }
@@ -79,14 +99,39 @@ function getBorderStyle(border?: BorderConfig): React.CSSProperties {
   return style;
 }
 
-function Row({ children, config, devNode }: RowProps) {
+function getHrefFromInnerLink(innerLink?: IInnerLink): string | undefined {
+  if (!innerLink || innerLink.type === "none") return undefined;
+
+  switch (innerLink.type) {
+    case "url":
+      return innerLink.url;
+    case "email":
+      return innerLink.email ? `mailto:${innerLink.email}` : undefined;
+    case "phone":
+      return innerLink.phone ? `tel:${innerLink.phone}` : undefined;
+    case "anchor":
+      return innerLink.anchor ? `#${innerLink.anchor}` : undefined;
+    case "page_top":
+      return "#";
+    case "page_bottom":
+      return "#bottom";
+    default:
+      return undefined;
+  }
+}
+
+function Row({ children, config, devNode, devMode }: RowProps) {
   const childrenArray = (
     Array.isArray(children) ? children : [children]
   ).filter((child) => child != null) as ReactNode[];
 
   const numChildren = childrenArray.length;
 
-  // 1. Outer TD for Background and Border Radius (no border here)
+  const href = getHrefFromInnerLink(config.innerLink);
+  const target = config.innerLink?.target;
+
+  // 1. Outer TD for Background and Border Radius (no border here).
+  //    height declared here is the *total* outer height.
   const backgroundTdStyle: React.CSSProperties = {
     backgroundColor: config.backgroundColor,
     borderRadius: config.borderRadius,
@@ -105,21 +150,25 @@ function Row({ children, config, devNode }: RowProps) {
     ...(config.borderRadius && { overflow: "hidden" }),
   };
 
-  // 2. Inner Table for Border and Border Radius
+  // 2. Inner Table for Border and Border Radius.
+  //    height: 100% so it stretches to fill the outer TD.
   const borderTableStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    borderCollapse: "separate", // Changed from collapse to separate for border-radius
+    borderCollapse: "separate",
     borderSpacing: 0,
     borderRadius: config.borderRadius,
     ...getBorderStyle(config.border),
   };
 
-  // 3. TD for Padding
+  // 3. TD for Padding only — no height.
+  //    The outer TD owns the total height; setting height here would cause
+  //    browsers/email clients to treat it as content-box height and add
+  //    padding on top, making the row taller than the declared height.
   const paddingTdStyle: React.CSSProperties = {
     padding: config.padding,
     width: "100%",
-    height: "100%",
+    // height intentionally omitted — padding must be inner, not additive
     verticalAlign: "top",
   };
 
@@ -144,7 +193,8 @@ function Row({ children, config, devNode }: RowProps) {
     : "left";
   const tdValign = config.alignItems ? alignMap[config.alignItems] : "top";
 
-  return (
+  // Content to render - wrapped in anchor if innerLink is defined
+  const content = (
     <table
       aria-label="Row Outer"
       role="presentation"
@@ -158,11 +208,6 @@ function Row({ children, config, devNode }: RowProps) {
         borderCollapse: "collapse",
       }}
       {...(config.height && { height: config.height })}
-      data-mobile-justify={config.mobile?.justifyContent}
-      data-mobile-align={config.mobile?.alignItems}
-      data-mobile-wrap={config.mobile?.wrap ? "true" : undefined}
-      data-gap={config.gap}
-      className="responsive-row"
     >
       <tbody>
         <tr>
@@ -171,7 +216,7 @@ function Row({ children, config, devNode }: RowProps) {
             style={backgroundTdStyle}
             {...(config.height && { height: config.height })}
           >
-            {/* Inner Table: Border and Border Radius */}
+            {/* Inner Table: Border and Border Radius — fills outer TD via height: 100% */}
             <table
               aria-label="Row Border Wrapper"
               role="presentation"
@@ -182,7 +227,7 @@ function Row({ children, config, devNode }: RowProps) {
             >
               <tbody>
                 <tr>
-                  {/* Padding TD */}
+                  {/* Padding TD — no height, padding is inner spacing only */}
                   <td style={paddingTdStyle}>
                     <table
                       aria-label="Row Justification Wrapper"
@@ -208,6 +253,14 @@ function Row({ children, config, devNode }: RowProps) {
                               style={contentTableStyle}
                               {...(config.height && { height: config.height })}
                               className="content-table row-content-table"
+                              data-mobile-justify={
+                                config.mobile?.justifyContent
+                              }
+                              data-mobile-align={config.mobile?.alignItems}
+                              data-mobile-wrap={
+                                config.mobile?.wrap ? "true" : undefined
+                              }
+                              data-gap={config.gap}
                             >
                               <tbody>
                                 <tr className="content-tr">
@@ -264,6 +317,25 @@ function Row({ children, config, devNode }: RowProps) {
       )}
     </table>
   );
+
+  // Wrap in anchor tag if innerLink is defined and NOT in dev mode
+  if (href && !devMode) {
+    return (
+      <a
+        href={href}
+        {...(target && { target })}
+        style={{
+          textDecoration: "none",
+          color: "inherit",
+          display: "block",
+        }}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return content;
 }
 
 export default memo(Row, arePropsEqual);

@@ -1,4 +1,4 @@
-import React, { memo, ReactNode } from "react";
+import React, { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
 
@@ -22,15 +22,30 @@ export interface SectionProps {
   devNode?: ReactNode;
 }
 
-function getBorderStyle(border?: BorderConfig): React.CSSProperties {
+function getBorderStyle(border?: BorderConfig): CSSProperties {
   if (!border) return {};
 
-  const style: React.CSSProperties = {};
+  const style: CSSProperties = {};
 
+  // If a full border is specified, apply it
   if (border.width && border.style && border.color) {
     style.border = `${border.width} ${border.style} ${border.color}`;
+  } else {
+    // If only individual borders are specified, explicitly set others to 'none'
+    // to prevent Outlook Classic from showing black borders
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      style.borderTop = "none";
+      style.borderRight = "none";
+      style.borderBottom = "none";
+      style.borderLeft = "none";
+    }
   }
 
+  // Override with specific borders if provided
   if (border.top) {
     style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
   }

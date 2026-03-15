@@ -1,5 +1,6 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
+import { BorderConfig } from "../types";
 
 export interface ImageConfig {
   /** The source URL of the image. Required. */
@@ -26,6 +27,9 @@ export interface ImageConfig {
   /** Border radius for the image (CSS only, limited compatibility). */
   borderRadius?: string;
 
+  /** Border configuration for the image. */
+  border?: BorderConfig;
+
   /** Optional URL to make the image clickable */
   href?: string;
 
@@ -39,6 +43,46 @@ export type ImageProps = {
   devMode?: boolean;
 };
 
+function getBorderStyle(border?: BorderConfig): CSSProperties {
+  if (!border) return {};
+
+  const style: CSSProperties = {};
+
+  // If a full border is specified, apply it
+  if (border.width && border.style && border.color) {
+    style.border = `${border.width} ${border.style} ${border.color}`;
+  } else {
+    // If only individual borders are specified, explicitly set others to 'none'
+    // to prevent Outlook Classic from showing black borders
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      style.borderTop = "none";
+      style.borderRight = "none";
+      style.borderBottom = "none";
+      style.borderLeft = "none";
+    }
+  }
+
+  // Override with specific borders if provided
+  if (border.top) {
+    style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
+  }
+  if (border.right) {
+    style.borderRight = `${border.right.width} ${border.right.style} ${border.right.color}`;
+  }
+  if (border.bottom) {
+    style.borderBottom = `${border.bottom.width} ${border.bottom.style} ${border.bottom.color}`;
+  }
+  if (border.left) {
+    style.borderLeft = `${border.left.width} ${border.left.style} ${border.left.color}`;
+  }
+
+  return style;
+}
+
 function Image({ config, devNode, devMode }: ImageProps) {
   const {
     src,
@@ -50,9 +94,13 @@ function Image({ config, devNode, devMode }: ImageProps) {
     backgroundColor,
     padding,
     borderRadius,
+    border,
     href,
     target,
   } = config;
+
+  // Get border styles
+  const borderStyle = getBorderStyle(border);
 
   // 1. Image Style: Critical for compatibility, especially display: block
   const imgStyle: CSSProperties = {
@@ -69,6 +117,9 @@ function Image({ config, devNode, devMode }: ImageProps) {
     // Styling
     border: "0", // Ensures no default browser/client border
     borderRadius: borderRadius,
+
+    // Apply border styles to the image itself
+    ...borderStyle,
   };
 
   // 2. Link Style: Ensure no underline or color changes

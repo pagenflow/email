@@ -49,6 +49,12 @@ export interface HeadingConfig {
 
   /** Background color of the heading block. */
   backgroundColor?: string;
+
+  /** Word break behavior (e.g., 'break-all', 'break-word', 'keep-all', 'normal'). */
+  wordBreak?: string;
+
+  /** White space handling (e.g., 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'normal'). */
+  whiteSpace?: string;
 }
 
 export type HeadingProps = {
@@ -74,6 +80,8 @@ function Heading({ config, devMode, children }: HeadingProps) {
     direction,
     verticalAlign,
     backgroundColor,
+    wordBreak,
+    whiteSpace,
   } = config;
 
   // Determine the content to render
@@ -100,6 +108,8 @@ function Heading({ config, devMode, children }: HeadingProps) {
     textTransform: textTransform as any,
     textDecoration: textDecoration,
     direction: direction as any,
+    wordBreak: wordBreak as any,
+    whiteSpace: whiteSpace as any,
 
     // Critical: Remove default top/bottom margin from HTML heading tags
     margin: "0",

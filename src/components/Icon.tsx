@@ -1,6 +1,7 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import IInnerLink from "../types/IInnerLink";
 import { arePropsEqual } from "../utils/memoUtils";
+import { BorderConfig } from "../types";
 
 export interface IconConfig {
   /** Icon identifier for the Iconify API */
@@ -33,6 +34,9 @@ export interface IconConfig {
   /** Border radius for the icon container */
   borderRadius?: string;
 
+  /** Border configuration for the icon container */
+  border?: BorderConfig;
+
   /** Horizontal alignment within the container */
   justifyContent?: "start" | "center" | "end";
 }
@@ -54,6 +58,93 @@ const justifyMap: Record<
   end: "right",
 };
 
+function getBorderStyle(border?: BorderConfig): CSSProperties {
+  if (!border) return {};
+
+  const style: CSSProperties = {};
+
+  // If a full border is specified, apply it
+  if (border.width && border.style && border.color) {
+    style.border = `${border.width} ${border.style} ${border.color}`;
+  } else {
+    // If only individual borders are specified, explicitly set others to 'none'
+    // to prevent Outlook Classic from showing black borders
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      style.borderTop = "none";
+      style.borderRight = "none";
+      style.borderBottom = "none";
+      style.borderLeft = "none";
+    }
+  }
+
+  // Override with specific borders if provided
+  if (border.top) {
+    style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
+  }
+  if (border.right) {
+    style.borderRight = `${border.right.width} ${border.right.style} ${border.right.color}`;
+  }
+  if (border.bottom) {
+    style.borderBottom = `${border.bottom.width} ${border.bottom.style} ${border.bottom.color}`;
+  }
+  if (border.left) {
+    style.borderLeft = `${border.left.width} ${border.left.style} ${border.left.color}`;
+  }
+
+  return style;
+}
+
+function getBorderStyleString(border?: BorderConfig): string {
+  if (!border) return "";
+
+  const styles: string[] = [];
+
+  // If a full border is specified, apply it
+  if (border.width && border.style && border.color) {
+    styles.push(`border: ${border.width} ${border.style} ${border.color};`);
+  } else {
+    // If only individual borders are specified
+    const hasIndividualBorders =
+      border.top || border.right || border.bottom || border.left;
+
+    if (hasIndividualBorders) {
+      // Default all borders to none
+      styles.push("border-top: none;");
+      styles.push("border-right: none;");
+      styles.push("border-bottom: none;");
+      styles.push("border-left: none;");
+    }
+  }
+
+  // Override with specific borders if provided
+  if (border.top) {
+    styles.push(
+      `border-top: ${border.top.width} ${border.top.style} ${border.top.color};`,
+    );
+  }
+  if (border.right) {
+    styles.push(
+      `border-right: ${border.right.width} ${border.right.style} ${border.right.color};`,
+    );
+  }
+  if (border.bottom) {
+    styles.push(
+      `border-bottom: ${border.bottom.width} ${border.bottom.style} ${border.bottom.color};`,
+    );
+  }
+  if (border.left) {
+    styles.push(
+      `border-left: ${border.left.width} ${border.left.style} ${border.left.color};`,
+    );
+  }
+
+  return styles.join(" ");
+}
+
 // Helper to build Iconify API URL
 function buildIconifyUrl(config: IconConfig): string | null {
   const {
@@ -66,6 +157,16 @@ function buildIconifyUrl(config: IconConfig): string | null {
 
   if (!iconIdentifier) return null;
 
+  // Parse height to extract numeric value
+  const parseHeight = (h: string | number): number => {
+    if (typeof h === "number") return h;
+    // Extract numeric value from string (e.g., "24px" -> 24)
+    const match = String(h).match(/^(-?\d*\.?\d+)/);
+    return match ? parseFloat(match[1]) : 24;
+  };
+
+  const numericHeight = parseHeight(height);
+
   // Remove # from color if present
   const cleanColor = color.replace("#", "");
 
@@ -75,7 +176,7 @@ function buildIconifyUrl(config: IconConfig): string | null {
     "https://iconify.pagenflow.com/api/image/{{height}}/{{color}}/{{rotate}}-{{rotate-orientation}}/{{icon-full-name}}.png";
 
   return template
-    .replace("{{height}}", String(Number(height) * Number(2)))
+    .replace("{{height}}", String(numericHeight * 2))
     .replace("{{color}}", cleanColor)
     .replace("{{rotate}}", String(rotate))
     .replace("{{rotate-orientation}}", rotateOrientation)
@@ -112,6 +213,7 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
     backgroundColor,
     padding = "0",
     borderRadius = "0",
+    border,
     innerLink,
     justifyContent = "center",
   } = config;
@@ -121,6 +223,10 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
   const href = buildLinkHref(innerLink);
   const target = innerLink?.target || "_self";
   const align = justifyMap[justifyContent];
+
+  // Get border styles
+  const borderStyle = getBorderStyle(border);
+  const borderStyleString = getBorderStyleString(border);
 
   // Convert width/height to string with px if number
   const widthStr = typeof width === "number" ? `${width}px` : width;
@@ -146,6 +252,7 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
     border: 0, // No default border
     width: widthStr || "auto",
     height: heightStr || "auto",
+    objectFit: "contain",
   };
 
   // 2. Link Style: No underline or color changes
@@ -156,14 +263,29 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
     outline: "none",
   };
 
-  // 3. TD Style: Padding and background
-  const tdStyle: CSSProperties = {
-    padding: padding,
+  // 3. Outer TD Style: Background and border-radius wrapper with border
+  const outerTdStyle: CSSProperties = {
     backgroundColor: backgroundColor,
-    fontSize: "0", // CRITICAL: Collapses extra space
-    lineHeight: "0", // CRITICAL: Collapses extra space7
     borderRadius: borderRadius,
     overflow: "hidden",
+    fontSize: "0",
+    lineHeight: "0",
+  };
+
+  // 4. Inner Table Style: Apply border here with border-collapse: separate
+  const innerTableStyle: CSSProperties = {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    borderRadius: borderRadius,
+    ...borderStyle,
+  };
+
+  // 5. Inner TD Style: Padding
+  const innerTdStyle: CSSProperties = {
+    padding: padding,
+    fontSize: "0", // CRITICAL: Collapses extra space
+    lineHeight: "0", // CRITICAL: Collapses extra space
   };
 
   // --- VML Calculation for Outlook Compatibility ---
@@ -188,16 +310,21 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
         )
       : 0;
 
+  // VML stroke color for border
+  const vmlStrokeColor = border?.color || vmlFillColor;
+  const vmlStrokeWeight = border?.width ? parseInt(border.width, 10) : 0;
+  const hasVmlStroke = vmlStrokeWeight > 0;
+
   // Build VML code for Outlook
   const vmlIcon =
     backgroundColor && numericBorderRadius > 0
       ? `
     <!--[if mso]>
-    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" ${href && !devMode ? `href="${href}"` : ""} style="height:${vmlHeight}px;width:${vmlWidth}px;v-text-anchor:middle;" arcsize="${arcsize}%" stroke="false" fillcolor="${vmlFillColor}">
+    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" ${href && !devMode ? `href="${href}"` : ""} style="height:${vmlHeight}px;width:${vmlWidth}px;v-text-anchor:middle;" arcsize="${arcsize}%" ${hasVmlStroke ? `strokecolor="${vmlStrokeColor}" strokeweight="${vmlStrokeWeight}px"` : 'stroke="false"'} fillcolor="${vmlFillColor}">
       <w:anchorlock/>
       <v:textbox inset="0,0,0,0" style="text-align: center;">
         <center style="padding:${padding};">
-          <img src="${iconSrc || ""}" alt="" width="${widthNum || 24}" height="${heightNum || 24}" border="0" style="display:block;border:0;" />
+          <img src="${iconSrc || ""}" alt="" width="${widthNum || 24}" height="${heightNum || 24}" border="0" style="display:block;border:0;object-fit:contain;" />
         </center>
       </v:textbox>
     </v:roundrect>
@@ -218,7 +345,7 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
       <img
         draggable={false}
         src={iconSrc}
-        alt="" // Icons are decorative, empty alt is appropriate
+        alt=""
         style={imgStyle}
         width={widthNum}
         height={heightNum}
@@ -253,14 +380,22 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
       <tbody>
         <tr>
-          <td style="background-color: ${backgroundColor}; border-radius: ${borderRadius}; padding: ${padding}; font-size: 0; line-height: 0; overflow: hidden;">
-            ${
-              href
-                ? `<a href="${href}" target="${target}" style="display:block;text-decoration:none;border:0;outline:none;" ${target === "_blank" ? 'rel="noopener noreferrer"' : ""}>
-                   <img draggable="false" src="${iconSrc}" alt="" width="${widthNum || 24}" height="${heightNum || 24}" border="0" style="display:block;border:0;width:${widthStr || "auto"};height:${heightStr || "auto"};" />
-                 </a>`
-                : `<img draggable="false" src="${iconSrc}" alt="" width="${widthNum || 24}" height="${heightNum || 24}" border="0" style="display:block;border:0;width:${widthStr || "auto"};height:${heightStr || "auto"};" />`
-            }
+          <td style="background-color: ${backgroundColor}; border-radius: ${borderRadius}; overflow: hidden; font-size: 0; line-height: 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; border-radius: ${borderRadius}; width: 100%; ${borderStyleString}">
+              <tbody>
+                <tr>
+                  <td style="padding: ${padding}; font-size: 0; line-height: 0;">
+                    ${
+                      href
+                        ? `<a href="${href}" target="${target}" style="display:block;text-decoration:none;border:0;outline:none;" ${target === "_blank" ? 'rel="noopener noreferrer"' : ""}>
+                           <img draggable="false" src="${iconSrc}" alt="" width="${widthNum || 24}" height="${heightNum || 24}" border="0" style="display:block;border:0;width:${widthStr || "auto"};height:${heightStr || "auto"};object-fit:contain;" />
+                         </a>`
+                        : `<img draggable="false" src="${iconSrc}" alt="" width="${widthNum || 24}" height="${heightNum || 24}" border="0" style="display:block;border:0;width:${widthStr || "auto"};height:${heightStr || "auto"};object-fit:contain;" />`
+                    }
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </td>
         </tr>
       </tbody>
@@ -282,7 +417,7 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
         position: "relative",
         // --- End dev
 
-        width: widthStr || "auto",
+        width: "auto",
         borderCollapse: "collapse",
 
         // base
@@ -302,8 +437,22 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
               }}
             />
           ) : (
-            <td style={tdStyle} align={align}>
-              {content}
+            <td style={outerTdStyle} align={align}>
+              <table
+                role="presentation"
+                cellPadding={0}
+                cellSpacing={0}
+                border={0}
+                style={innerTableStyle}
+              >
+                <tbody>
+                  <tr>
+                    <td style={innerTdStyle} align={align}>
+                      {content}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </td>
           )}
         </tr>
