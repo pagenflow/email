@@ -20,6 +20,9 @@ export interface HeadingConfig {
   /** Horizontal text alignment. */
   textAlign?: "left" | "center" | "right" | "justify";
 
+  /** Font family (e.g., 'Arial, sans-serif'). */
+  fontFamily?: string;
+
   /** Font size (e.g., '24px'). Overrides default size for the level. */
   fontSize?: string;
 
@@ -70,6 +73,7 @@ function Heading({ config, devMode, children }: HeadingProps) {
     padding,
     color,
     textAlign,
+    fontFamily,
     fontSize,
     fontWeight,
     fontStyle,
@@ -100,6 +104,7 @@ function Heading({ config, devMode, children }: HeadingProps) {
   const headingStyle: CSSProperties = {
     color: color,
     textAlign: textAlign,
+    fontFamily: fontFamily || "Arial, Helvetica, sans-serif",
     fontSize: fontSize,
     fontWeight: fontWeight,
     fontStyle: fontStyle,
@@ -114,9 +119,6 @@ function Heading({ config, devMode, children }: HeadingProps) {
     // Critical: Remove default top/bottom margin from HTML heading tags
     margin: "0",
     padding: "0",
-
-    // Ensures compatibility with MSO/general font rendering
-    fontFamily: "Arial, Helvetica, sans-serif",
 
     // Outlook specific fixes (using string indexing)
     ["msoLineHeightRule" as string]: "exactly",

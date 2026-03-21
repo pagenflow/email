@@ -14,6 +14,9 @@ export interface TextConfig {
   /** Horizontal text alignment (e.g., 'left', 'center'). */
   textAlign?: "left" | "center" | "right" | "justify";
 
+  /** Font family (e.g., 'Arial, sans-serif'). */
+  fontFamily?: string;
+
   /** Font size (e.g., '16px'). */
   fontSize?: string;
 
@@ -66,6 +69,7 @@ function Text({ config, devMode, children }: TextProps) {
     padding,
     color,
     textAlign,
+    fontFamily,
     fontSize,
     fontWeight,
     fontStyle,
@@ -93,6 +97,7 @@ function Text({ config, devMode, children }: TextProps) {
   const contentStyle: CSSProperties = {
     color: color,
     textAlign: textAlign,
+    fontFamily: fontFamily || "Arial, Helvetica, sans-serif",
     fontSize: fontSize,
     fontWeight: fontWeight,
     fontStyle: fontStyle,
@@ -107,7 +112,6 @@ function Text({ config, devMode, children }: TextProps) {
     wordBreak: wordBreak as any,
     margin: "0",
     padding: "0",
-    fontFamily: "Arial, Helvetica, sans-serif",
   };
 
   // Determine content to render

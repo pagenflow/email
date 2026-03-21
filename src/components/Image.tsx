@@ -1,40 +1,46 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
+import { NonMso } from "./MsoConditional";
 
-export interface ImageConfig {
-  /** The source URL of the image. Required. */
-  src: string;
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-  /** Alt text for accessibility. Required. */
-  alt: string;
-
-  /** Width of the image. Can be fixed (e.g., "600px") or percentage (e.g., "100%"). */
+/** Style-only mobile overrides. Content props (src, alt, href, target) are excluded. */
+export interface ImageMobileConfig {
   width?: string;
-
-  /** Height of the image. Optional, usually auto-calculated if width is set. */
   height?: string;
-
   maxWidth?: string;
   maxHeight?: string;
-
-  /** Background color of the containing TD/parent element if the image has transparency. */
   backgroundColor?: string;
-
-  /** Padding around the image (applied to the containing TD). */
   padding?: string;
-
-  /** Border radius for the image (CSS only, limited compatibility). */
   borderRadius?: string;
-
-  /** Border configuration for the image. */
   border?: BorderConfig;
+  /** When true, the mobile version of the image is not rendered at all. */
+  hidden?: boolean;
+}
 
-  /** Optional URL to make the image clickable */
+export interface ImageConfig {
+  src: string;
+  alt: string;
+  width?: string;
+  height?: string;
+  maxWidth?: string;
+  maxHeight?: string;
+  backgroundColor?: string;
+  padding?: string;
+  borderRadius?: string;
+  border?: BorderConfig;
   href?: string;
-
-  /** Link target attribute (e.g., "_blank" for new window) */
   target?: string;
+
+  /**
+   * Mobile-specific style overrides.
+   * Only explicitly set properties override the desktop value on mobile.
+   * Unset properties fall back to the desktop value.
+   */
+  mobile?: ImageMobileConfig;
 }
 
 export type ImageProps = {
@@ -43,86 +49,134 @@ export type ImageProps = {
   devMode?: boolean;
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function getBorderStyle(border?: BorderConfig): CSSProperties {
   if (!border) return {};
-
   const style: CSSProperties = {};
 
-  // If a full border is specified, apply it
   if (border.width && border.style && border.color) {
     style.border = `${border.width} ${border.style} ${border.color}`;
   } else {
-    // If only individual borders are specified, explicitly set others to 'none'
-    // to prevent Outlook Classic from showing black borders
-    const hasIndividualBorders =
+    const hasIndividual =
       border.top || border.right || border.bottom || border.left;
-
-    if (hasIndividualBorders) {
-      // Default all borders to none
+    if (hasIndividual) {
       style.borderTop = "none";
       style.borderRight = "none";
       style.borderBottom = "none";
       style.borderLeft = "none";
     }
   }
-
-  // Override with specific borders if provided
-  if (border.top) {
+  if (border.top)
     style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
-  }
-  if (border.right) {
+  if (border.right)
     style.borderRight = `${border.right.width} ${border.right.style} ${border.right.color}`;
-  }
-  if (border.bottom) {
+  if (border.bottom)
     style.borderBottom = `${border.bottom.width} ${border.bottom.style} ${border.bottom.color}`;
-  }
-  if (border.left) {
+  if (border.left)
     style.borderLeft = `${border.left.width} ${border.left.style} ${border.left.color}`;
-  }
 
   return style;
 }
 
-function Image({ config, devNode, devMode }: ImageProps) {
+function getBorderStyleString(border?: BorderConfig): string {
+  if (!border) return "";
+  const styles: string[] = [];
+
+  if (border.width && border.style && border.color) {
+    styles.push(`border:${border.width} ${border.style} ${border.color};`);
+  } else {
+    const hasIndividual =
+      border.top || border.right || border.bottom || border.left;
+    if (hasIndividual) {
+      styles.push(
+        "border-top:none;",
+        "border-right:none;",
+        "border-bottom:none;",
+        "border-left:none;",
+      );
+    }
+  }
+  if (border.top)
+    styles.push(
+      `border-top:${border.top.width} ${border.top.style} ${border.top.color};`,
+    );
+  if (border.right)
+    styles.push(
+      `border-right:${border.right.width} ${border.right.style} ${border.right.color};`,
+    );
+  if (border.bottom)
+    styles.push(
+      `border-bottom:${border.bottom.width} ${border.bottom.style} ${border.bottom.color};`,
+    );
+  if (border.left)
+    styles.push(
+      `border-left:${border.left.width} ${border.left.style} ${border.left.color};`,
+    );
+
+  return styles.join(" ");
+}
+
+// ---------------------------------------------------------------------------
+// Merged styles helper — applies mobile overrides on top of desktop values
+// ---------------------------------------------------------------------------
+
+function mergeConfig(config: ImageConfig, overrides?: ImageMobileConfig) {
+  return {
+    width: overrides?.width ?? config.width,
+    height: overrides?.height ?? config.height,
+    maxWidth: overrides?.maxWidth ?? config.maxWidth,
+    maxHeight: overrides?.maxHeight ?? config.maxHeight,
+    backgroundColor: overrides?.backgroundColor ?? config.backgroundColor,
+    padding: overrides?.padding ?? config.padding,
+    borderRadius: overrides?.borderRadius ?? config.borderRadius,
+    border: overrides?.border ?? config.border,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Desktop table — JSX (same as original)
+// ---------------------------------------------------------------------------
+
+function renderDesktopTable({
+  config,
+  className,
+  devNode,
+  devMode,
+}: {
+  config: ImageConfig;
+  className?: string;
+  devNode?: ReactNode;
+  devMode?: boolean;
+}) {
+  const { src, alt, href, target } = config;
   const {
-    src,
-    alt,
     width,
     height,
-    maxHeight,
     maxWidth,
+    maxHeight,
     backgroundColor,
     padding,
     borderRadius,
     border,
-    href,
-    target,
-  } = config;
+  } = mergeConfig(config);
 
-  // Get border styles
   const borderStyle = getBorderStyle(border);
 
-  // 1. Image Style: Critical for compatibility, especially display: block
   const imgStyle: CSSProperties = {
-    // Basic image properties
-    display: "block", // Prevents extra vertical space/gaps below the image
-    objectFit: "cover", // For controlling how the image fits (modern CSS, may be ignored)
-
-    // Dimensions (using CSS fallback)
+    display: "block",
+    objectFit: "cover",
     width: width || "100%",
     height: height || "auto",
     maxWidth: maxWidth || "100%",
     maxHeight: maxHeight,
-
-    // Styling
-    border: "0", // Ensures no default browser/client border
+    border: "0",
     borderRadius: borderRadius,
-
-    // Apply border styles to the image itself
     ...borderStyle,
   };
 
-  // 2. Link Style: Ensure no underline or color changes
   const linkStyle: CSSProperties = {
     display: "block",
     textDecoration: "none",
@@ -130,46 +184,41 @@ function Image({ config, devNode, devMode }: ImageProps) {
     outline: "none",
   };
 
-  // 3. TD Style: Where padding and background are reliably applied
   const tdStyle: CSSProperties = {
     padding: padding,
     backgroundColor: backgroundColor,
-    fontSize: "0", // CRITICAL: Collapses extra space from Outlook/Gmail
-    lineHeight: "0", // CRITICAL: Collapses extra space from Outlook/Gmail
+    fontSize: "0",
+    lineHeight: "0",
   };
 
-  // Image element with proper attributes for email compatibility
+  const widthNum = width?.endsWith("px") ? parseInt(width, 10) : undefined;
+  const maxWidthNum = maxWidth?.endsWith("px")
+    ? parseInt(maxWidth, 10)
+    : undefined;
+  const heightNum = height?.endsWith("px") ? parseInt(height, 10) : undefined;
+
   const imageElement = (
     <img
       draggable={false}
       src={src}
       alt={alt}
       style={imgStyle}
-      // For Outlook: Use the smaller of width or maxWidth for the HTML attribute
-      width={(() => {
-        const widthPx = width?.endsWith("px") ? parseInt(width, 10) : undefined;
-        const maxWidthPx = maxWidth?.endsWith("px")
-          ? parseInt(maxWidth, 10)
-          : undefined;
-
-        if (widthPx && maxWidthPx) {
-          return Math.min(widthPx, maxWidthPx);
-        }
-        return widthPx || maxWidthPx;
-      })()}
-      height={height?.endsWith("px") ? parseInt(height, 10) : undefined}
+      width={
+        widthNum && maxWidthNum
+          ? Math.min(widthNum, maxWidthNum)
+          : widthNum || maxWidthNum
+      }
+      height={heightNum}
       {...{ border: 0 as any }}
     />
   );
 
-  // Wrap image in link if href is provided and not in dev mode
   const content =
     href && !devMode ? (
       <a
         href={href}
         target={target}
         style={linkStyle}
-        // Add rel for security when opening in new tab
         {...(target === "_blank" ? { rel: "noopener noreferrer" } : {})}
       >
         {imageElement}
@@ -179,18 +228,15 @@ function Image({ config, devNode, devMode }: ImageProps) {
     );
 
   return (
-    // We wrap the image in a table to reliably apply padding, background, and alignment.
     <table
       aria-label={`Image Wrapper for: ${alt}`}
       role="presentation"
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      className={className}
       style={{
-        // --- Start dev
         position: "relative",
-        // --- End dev
-
         width: width || "100%",
         borderCollapse: "collapse",
       }}
@@ -198,7 +244,6 @@ function Image({ config, devNode, devMode }: ImageProps) {
     >
       <tbody>
         <tr>
-          {/* TD for Padding, Background, and Space Collapse */}
           <td style={tdStyle} align="center">
             {content}
           </td>
@@ -212,6 +257,137 @@ function Image({ config, devNode, devMode }: ImageProps) {
         </tfoot>
       )}
     </table>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mobile table — HTML string (injected via NonMso, same pattern as Icon VML)
+// ---------------------------------------------------------------------------
+
+function buildMobileTableHTML({
+  config,
+  overrides,
+  className,
+}: {
+  config: ImageConfig;
+  overrides: ImageMobileConfig;
+  className: string;
+}): string {
+  const { src, alt, href, target } = config;
+  const {
+    width,
+    height,
+    maxWidth,
+    maxHeight,
+    backgroundColor,
+    padding,
+    borderRadius,
+    border,
+  } = mergeConfig(config, overrides);
+
+  const borderStyleStr = getBorderStyleString(border);
+
+  const widthNum = width?.endsWith("px") ? parseInt(width, 10) : undefined;
+  const maxWidthNum = maxWidth?.endsWith("px")
+    ? parseInt(maxWidth, 10)
+    : undefined;
+  const heightNum = height?.endsWith("px") ? parseInt(height, 10) : undefined;
+  const resolvedWidth =
+    widthNum && maxWidthNum
+      ? Math.min(widthNum, maxWidthNum)
+      : widthNum || maxWidthNum;
+
+  const imgTag = `<img
+    draggable="false"
+    src="${src}"
+    alt="${alt}"
+    ${resolvedWidth ? `width="${resolvedWidth}"` : ""}
+    ${heightNum ? `height="${heightNum}"` : ""}
+    border="0"
+    style="display:block;object-fit:cover;width:${width || "100%"};height:${height || "auto"};max-width:${maxWidth || "100%"};${maxHeight ? `max-height:${maxHeight};` : ""}border:0;${borderRadius ? `border-radius:${borderRadius};` : ""}${borderStyleStr}"
+  />`;
+
+  const content = href
+    ? `<a href="${href}" target="${target || "_self"}" style="display:block;text-decoration:none;border:0;outline:none;"${target === "_blank" ? ' rel="noopener noreferrer"' : ""}>${imgTag}</a>`
+    : imgTag;
+
+  return `
+    <table
+      aria-label="Image Wrapper for: ${alt}"
+      role="presentation"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      class="${className}"
+      style="position:relative;width:${width || "100%"};border-collapse:collapse;"
+    >
+      <tbody>
+        <tr>
+          <td
+            align="center"
+            style="padding:${padding || ""};background-color:${backgroundColor || ""};font-size:0;line-height:0;"
+          >
+            ${content}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+function Image({ config, devNode, devMode }: ImageProps) {
+  const { mobile } = config;
+  const hasMobileOverrides = !!mobile && !mobile.hidden;
+  const isHiddenOnMobile = !!mobile?.hidden;
+
+  return (
+    <>
+      {/*
+       * Desktop table — JSX, always rendered.
+       *
+       * - no mobile config     → no class (shows everywhere)
+       * - mobile.hidden = true → hide-on-mobile (hidden on mobile, no mobile table)
+       * - mobile overrides set → hide-on-mobile (replaced by mobile table on small screens)
+       */}
+      {renderDesktopTable({
+        config,
+        className:
+          hasMobileOverrides || isHiddenOnMobile ? "hide-on-mobile" : undefined,
+        devNode,
+        devMode,
+      })}
+
+      {/*
+       * Mobile table — HTML string injected via NonMso <td>.
+       * Not rendered when mobile.hidden is true — the desktop table
+       * simply does not appear on mobile in that case.
+       */}
+      {hasMobileOverrides && !devMode && (
+        <table
+          role="presentation"
+          cellPadding={0}
+          cellSpacing={0}
+          border={0}
+          style={{ width: "100%", borderCollapse: "collapse" }}
+        >
+          <tbody>
+            <tr>
+              <NonMso
+                html={buildMobileTableHTML({
+                  config,
+                  overrides: mobile,
+                  className: "hide-on-desktop",
+                })}
+              />
+            </tr>
+          </tbody>
+        </table>
+      )}
+    </>
   );
 }
 

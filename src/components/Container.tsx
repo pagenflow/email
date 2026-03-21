@@ -277,7 +277,7 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
 
           <td
             key={`gap-${index}`}
-            className="desktop-gap-column"
+            className={isStacking ? "desktop-gap-column" : undefined}
             width={config.gap}
             style={gapTdStyle}
           >

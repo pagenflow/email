@@ -48,6 +48,9 @@ export interface ButtonConfig {
   /** Font style (e.g., 'italic'). */
   fontStyle?: string;
 
+  /** Font family (e.g., 'Arial, sans-serif'). */
+  fontFamily?: string;
+
   /** Line height (e.g., '1.5' or '24px'). */
   lineHeight?: string;
 
@@ -60,11 +63,20 @@ export interface ButtonConfig {
   /** Text decoration (e.g., 'underline', 'line-through'). */
   textDecoration?: string;
 
-  /** Font family (e.g., 'Arial, sans-serif'). */
-  fontFamily?: string;
+  /** Text direction (e.g., 'ltr', 'rtl'). */
+  direction?: string;
+
+  /** Vertical alignment of text (e.g., 'sub', 'super'). */
+  verticalAlign?: string;
+
+  /** Opacity of the button text (e.g., '0.5', '1'). */
+  opacity?: string | number;
 
   /** White space behavior (e.g., 'normal', 'nowrap', 'pre-wrap'). */
   whiteSpace?: string;
+
+  /** Word break behavior (e.g., 'break-all', 'break-word', 'keep-all', 'normal'). */
+  wordBreak?: string;
 }
 
 export type ButtonProps = {
@@ -185,22 +197,30 @@ function Button({ config, devMode }: ButtonProps) {
     fontSize = "16px",
     fontWeight = "500",
     fontStyle,
+    fontFamily = "Arial, sans-serif",
     lineHeight = "1.2",
     letterSpacing,
     textTransform,
     textDecoration = "none",
-    fontFamily = "Arial, sans-serif",
+    direction,
+    verticalAlign,
+    opacity,
     whiteSpace = "normal",
+    wordBreak = "break-word",
   } = config;
+
+  // Sanitize fontFamily early so safeFontFamily is available for all paths below.
+  const safeFontFamily = fontFamily
+    ? fontFamily.replace(/['"]/g, "")
+    : fontFamily;
 
   // 1. Link (A) Tag Styles (Fallback for Webmail/Mobile)
   const linkStyle: CSSProperties = {
     color: color,
     textDecoration: textDecoration,
     display: "block",
-    // Apply padding here for simplicity, though the TD is more reliable
     padding: padding,
-    wordBreak: "break-word",
+    wordBreak: wordBreak as any,
     fontFamily: fontFamily,
     fontSize: fontSize,
     fontWeight: fontWeight,
@@ -209,6 +229,9 @@ function Button({ config, devMode }: ButtonProps) {
     letterSpacing: letterSpacing,
     textTransform: textTransform as any,
     textAlign: textAlign,
+    direction: direction as any,
+    verticalAlign: verticalAlign,
+    opacity: opacity,
     whiteSpace: whiteSpace as any,
   };
 
@@ -254,12 +277,12 @@ function Button({ config, devMode }: ButtonProps) {
     // Calculate VML height - trust user's padding and let text wrap naturally
     // VML v:textbox will handle text wrapping automatically
     const textContent = typeof children === "string" ? children : "";
-    
+
     // Estimate number of lines based on text length and button width
     const horizontalPadding = padding.split(" ")[1]
       ? parseInt(padding.split(" ")[1], 10) * 2
       : numericPadding * 2;
-    
+
     const availableTextWidth = vmlWidth - horizontalPadding;
     const charWidthMultiplier =
       fontWeight && parseInt(fontWeight) >= 500 ? 0.7 : 0.6;
@@ -301,7 +324,10 @@ function Button({ config, devMode }: ButtonProps) {
       textDecoration && textDecoration !== "none"
         ? `text-decoration:${textDecoration};`
         : "";
-    const vmlWhiteSpace = whiteSpace !== "normal" ? `white-space:${whiteSpace};` : "";
+    const vmlWhiteSpace =
+      whiteSpace !== "normal" ? `white-space:${whiteSpace};` : "";
+    const vmlDirection = direction ? `direction:${direction};` : "";
+    const vmlOpacity = opacity !== undefined ? `opacity:${opacity};` : "";
 
     // VML code uses MSO conditional comments to render only in Outlook
     // Use table with explicit MSO height for vertical centering
@@ -325,7 +351,7 @@ function Button({ config, devMode }: ButtonProps) {
       <v:textbox inset="${horizontalPaddingValue}px,${numericPadding}px,${horizontalPaddingValue}px,${numericPadding}px">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
           <tr>
-            <td ${vmlAlignAttr} valign="middle" style="${vmlAlignStyle}color:${color};font-family:${fontFamily};font-size:${fontSize};font-weight:${vmlFontWeight};${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}line-height:${lineHeight};mso-line-height-rule:exactly;">
+            <td ${vmlAlignAttr} valign="middle" style="${vmlAlignStyle}color:${color};font-family:${safeFontFamily};font-size:${fontSize};font-weight:${vmlFontWeight};${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}${vmlDirection}${vmlOpacity}line-height:${lineHeight};mso-line-height-rule:exactly;">
               ${typeof children === "string" ? children : ""}
             </td>
           </tr>
@@ -341,12 +367,24 @@ function Button({ config, devMode }: ButtonProps) {
 
   if (useSimpleOutlookApproach) {
     // Build consistent inline styles for text properties
-    const textDecorationStyle = textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : "";
+    const textDecorationStyle =
+      textDecoration && textDecoration !== "none"
+        ? `text-decoration: ${textDecoration};`
+        : "";
     const fontStyleProp = fontStyle ? `font-style: ${fontStyle};` : "";
-    const letterSpacingProp = letterSpacing ? `letter-spacing: ${letterSpacing};` : "";
-    const textTransformProp = textTransform ? `text-transform: ${textTransform};` : "";
-    const whiteSpaceProp = whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : "";
-    
+    const letterSpacingProp = letterSpacing
+      ? `letter-spacing: ${letterSpacing};`
+      : "";
+    const textTransformProp = textTransform
+      ? `text-transform: ${textTransform};`
+      : "";
+    const whiteSpaceProp =
+      whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : "";
+    const directionProp = direction ? `direction: ${direction};` : "";
+    const opacityProp = opacity !== undefined ? `opacity: ${opacity};` : "";
+    const wordBreakProp =
+      wordBreak !== "break-word" ? `word-break: ${wordBreak};` : "";
+
     simpleOutlookButton = `
     <!--[if mso]>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
@@ -355,7 +393,7 @@ function Button({ config, devMode }: ButtonProps) {
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${width || "auto"}" style="border-collapse: collapse;">
             <tr>
               <td bgcolor="${backgroundColor}" align="${textAlign}" style="padding: ${padding}; text-align: ${textAlign}; border-radius: ${borderRadius}; ${borderStyleString}">
-                <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecorationStyle} display: block; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyleProp} line-height: ${lineHeight}; ${letterSpacingProp} ${textTransformProp} text-align: ${textAlign}; ${whiteSpaceProp} mso-line-height-rule: exactly;">
+                <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecorationStyle} display: block; font-family: ${safeFontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyleProp} line-height: ${lineHeight}; ${letterSpacingProp} ${textTransformProp} text-align: ${textAlign}; ${whiteSpaceProp} ${directionProp} ${opacityProp} ${wordBreakProp} mso-line-height-rule: exactly;">
                   ${typeof children === "string" ? children : ""}
                 </a>
               </td>
@@ -367,6 +405,28 @@ function Button({ config, devMode }: ButtonProps) {
     <![endif]-->
   `;
   }
+
+  // Build shared inline style fragments for the non-MSO path.
+  // fontFamily uses the sanitized value so embedded quotes never break the
+  // style attribute string (which is always wrapped in double quotes).
+  const sharedTextStyles = [
+    `color: ${color};`,
+    safeFontFamily ? `font-family: ${safeFontFamily};` : "",
+    fontSize ? `font-size: ${fontSize};` : "",
+    fontWeight ? `font-weight: ${fontWeight};` : "",
+    fontStyle ? `font-style: ${fontStyle};` : "",
+    lineHeight ? `line-height: ${lineHeight};` : "",
+    letterSpacing ? `letter-spacing: ${letterSpacing};` : "",
+    textTransform ? `text-transform: ${textTransform};` : "",
+    textDecoration && textDecoration !== "none"
+      ? `text-decoration: ${textDecoration};`
+      : "",
+    direction ? `direction: ${direction};` : "",
+    opacity !== undefined ? `opacity: ${opacity};` : "",
+    whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     // Wrapper table for alignment - maintains proper positioning for hover indicators
@@ -432,11 +492,11 @@ function Button({ config, devMode }: ButtonProps) {
                     <td style="padding: 0;">
                       ${
                         devMode
-                          ? `<span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyle ? `font-style: ${fontStyle};` : ""} line-height: ${lineHeight}; ${letterSpacing ? `letter-spacing: ${letterSpacing};` : ""} ${textTransform ? `text-transform: ${textTransform};` : ""} ${textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : ""} ${whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : ""} display: ${linkStyle.display}; text-align: ${textAlign}; word-break: ${linkStyle.wordBreak}; padding: ${padding};">
+                          ? `<span style="${sharedTextStyles} display: block; text-align: ${textAlign}; word-break: ${wordBreak}; padding: ${padding};">
                               ${typeof children === "string" ? children : ""}
                             </span>`
-                          : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : "text-decoration: none;"} display: ${linkStyle.display}; word-break: ${linkStyle.wordBreak}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyle ? `font-style: ${fontStyle};` : ""} line-height: ${lineHeight}; ${letterSpacing ? `letter-spacing: ${letterSpacing};` : ""} ${textTransform ? `text-transform: ${textTransform};` : ""} text-align: ${textAlign}; ${whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : ""} padding: ${padding};">
-                              <span style="color: ${color}; font-family: ${fontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyle ? `font-style: ${fontStyle};` : ""} line-height: ${lineHeight}; ${letterSpacing ? `letter-spacing: ${letterSpacing};` : ""} ${textTransform ? `text-transform: ${textTransform};` : ""} ${textDecoration && textDecoration !== "none" ? `text-decoration: ${textDecoration};` : ""} ${whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : ""}">
+                          : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; word-break: ${wordBreak}; text-align: ${textAlign}; padding: ${padding};">
+                              <span style="${sharedTextStyles}">
                                 ${typeof children === "string" ? children : ""}
                               </span>
                             </a>`
