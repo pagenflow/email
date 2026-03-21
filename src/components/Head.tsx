@@ -1,17 +1,6 @@
-// components/email/Head.tsx  (updated)
-// ─────────────────────────────────────────────────────────────────────────────
-// Accepts either:
-//   A) `fonts` prop  — array of ResolvedFont from loadEmailFonts()
-//      Head renders <Font> components internally from the data.
-//
-//   B) JSX children  — caller passes <Font> components manually (original API).
-//
-// Both are fully compatible and can be combined.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { ReactNode } from "react";
+import ResolvedFont from "../types/ResolvedFont";
 import Font from "./Font";
-import type { ResolvedFont } from "@/lib/email-fonts/loadEmailFonts";
 
 export interface HeadProps {
   /** Additional elements like custom <style> blocks, <title>, etc. */
@@ -126,9 +115,12 @@ export default function Head({
             margin-bottom: 20px !important;
           }
           ${["10px", "15px", "20px", "24px", "30px", "40px", ...rowGaps]
-            .filter((gap, index, self) => self.indexOf(gap) === index)
+            .filter(
+              (gap: string, index: number, self: string[]) =>
+                self.indexOf(gap) === index,
+            )
             .map(
-              (gap) => `
+              (gap: string) => `
               .row-content-table[data-mobile-wrap="true"][data-gap="${gap}"] > tbody > .content-tr > .child-cell:not(:last-child) {
                 margin-bottom: ${gap} !important;
               }`,
@@ -186,13 +178,13 @@ export default function Head({
       {/* ── Font declarations — rendered FIRST, before any text ──────────────
            • fonts prop: auto-rendered from loadEmailFonts() pipeline
            • children <Font>s: manually declared (original API, still works)   */}
-      {fonts.flatMap((resolved) =>
-        resolved.fontProps.map((props, i) => (
+      {fonts.flatMap((resolved: ResolvedFont) =>
+        resolved.fontProps.map((props, i: number) => (
           <Font
             key={`${resolved.family}-${props.fontWeight}-${props.fontStyle}-${i}`}
             {...props}
           />
-        ))
+        )),
       )}
 
       {/* Manual <Font> children or any other <style>/<meta> tags */}

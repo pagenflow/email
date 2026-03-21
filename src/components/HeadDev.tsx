@@ -1,7 +1,7 @@
 "use client";
 
-import { ResolvedFont } from "@/lib/email-fonts/loadEmailFonts";
 import { Fragment, ReactNode, useEffect } from "react";
+import ResolvedFont from "../types/ResolvedFont";
 
 export interface HeadDevProps {
   /** Additional elements like custom <style> blocks, <title>, etc. */
@@ -181,9 +181,12 @@ export default function HeadDev({
 
         /* Dynamic gap support - common values */
         ${["10px", "15px", "20px", "24px", "30px", "40px", ...rowGaps]
-          .filter((gap, index, self) => self.indexOf(gap) === index)
+          .filter(
+            (gap: string, index: number, self: string[]) =>
+              self.indexOf(gap) === index,
+          )
           .map(
-            (gap) => `
+            (gap: string) => `
         .row-content-table[data-mobile-wrap="true"][data-gap="${gap}"] > tbody > .content-tr > .child-cell:not(:last-child) {
           margin-bottom: ${gap} !important;
         }`,
@@ -244,7 +247,7 @@ export default function HeadDev({
     }
 
     // insert preload
-    fonts.forEach((resolved) => {
+    fonts.forEach((resolved: ResolvedFont) => {
       resolved.fontProps.forEach(({ webFont }) => {
         if (!webFont) return;
         if (document.querySelector(`link[data-font-preload="${webFont.url}"]`))
@@ -262,7 +265,7 @@ export default function HeadDev({
     });
 
     const fontFaceCss = fonts
-      .flatMap((resolved) =>
+      .flatMap((resolved: ResolvedFont) =>
         resolved.fontProps.map(
           ({
             fontFamily,
@@ -317,7 +320,7 @@ export default function HeadDev({
   useEffect(() => {
     if (!fonts.length) return;
 
-    const loadPromises = fonts.flatMap((resolved) =>
+    const loadPromises = fonts.flatMap((resolved: ResolvedFont) =>
       resolved.fontProps
         .filter((p) => !!p.webFont)
         .map(
