@@ -344,9 +344,12 @@ function Button({ config, devMode }: ButtonProps) {
       vmlAlignStyle = `text-align:${textAlign};`;
     }
 
+    // Border radius is intentionally omitted (arcsize="0%") for Outlook Classic.
+    // Outlook Classic does not reliably support rounded corners and the result
+    // is inconsistent, so we render sharp corners there instead.
     vmlButton = `
     <!--[if mso]>
-    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;width:${vmlWidth}px;" arcsize="${Math.min((parseInt(borderRadius) / vmlHeight) * 100, 50)}%" strokecolor="${vmlStrokeColor}" ${hasVmlStroke ? `strokeweight="${vmlStrokeWeight}px"` : 'stroke="f"'} fillcolor="${vmlFillColor}">
+    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;width:${vmlWidth}px;" arcsize="0%" strokecolor="${vmlStrokeColor}" ${hasVmlStroke ? `strokeweight="${vmlStrokeWeight}px"` : 'stroke="f"'} fillcolor="${vmlFillColor}">
       <w:anchorlock/>
       <v:textbox inset="${horizontalPaddingValue}px,${numericPadding}px,${horizontalPaddingValue}px,${numericPadding}px">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
@@ -385,6 +388,9 @@ function Button({ config, devMode }: ButtonProps) {
     const wordBreakProp =
       wordBreak !== "break-word" ? `word-break: ${wordBreak};` : "";
 
+    // Border radius is intentionally omitted from the Outlook Classic table cell.
+    // Outlook Classic ignores border-radius on table cells anyway, and including it
+    // can cause unexpected rendering artifacts, so we explicitly leave it out.
     simpleOutlookButton = `
     <!--[if mso]>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
@@ -392,7 +398,7 @@ function Button({ config, devMode }: ButtonProps) {
         <td align="${align}" style="padding: 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${width || "auto"}" style="border-collapse: collapse;">
             <tr>
-              <td bgcolor="${backgroundColor}" align="${textAlign}" style="padding: ${padding}; text-align: ${textAlign}; border-radius: ${borderRadius}; ${borderStyleString}">
+              <td bgcolor="${backgroundColor}" align="${textAlign}" style="padding: ${padding}; text-align: ${textAlign}; ${borderStyleString}">
                 <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecorationStyle} display: block; font-family: ${safeFontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyleProp} line-height: ${lineHeight}; ${letterSpacingProp} ${textTransformProp} text-align: ${textAlign}; ${whiteSpaceProp} ${directionProp} ${opacityProp} ${wordBreakProp} mso-line-height-rule: exactly;">
                   ${typeof children === "string" ? children : ""}
                 </a>

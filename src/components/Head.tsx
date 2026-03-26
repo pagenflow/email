@@ -18,7 +18,7 @@ export interface HeadProps {
    *
    * Example:
    *   const { resolved } = await loadEmailFonts(
-   *     extractFontFamilies(tree)
+   *     extractFontFamilies(doc)
    *   );
    *   <Head fonts={resolved} ... />
    */

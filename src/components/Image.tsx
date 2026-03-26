@@ -1,13 +1,11 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
-import { NonMso } from "./MsoConditional";
 
 // ---------------------------------------------------------------------------
-// Types
+// Types & Helpers (Kept internal for zero-dependency portability)
 // ---------------------------------------------------------------------------
 
-/** Style-only mobile overrides. Content props (src, alt, href, target) are excluded. */
 export interface ImageMobileConfig {
   width?: string;
   height?: string;
@@ -17,7 +15,8 @@ export interface ImageMobileConfig {
   padding?: string;
   borderRadius?: string;
   border?: BorderConfig;
-  /** When true, the mobile version of the image is not rendered at all. */
+  objectFit?: CSSProperties["objectFit"];
+  objectPosition?: string;
   hidden?: boolean;
 }
 
@@ -34,12 +33,8 @@ export interface ImageConfig {
   border?: BorderConfig;
   href?: string;
   target?: string;
-
-  /**
-   * Mobile-specific style overrides.
-   * Only explicitly set properties override the desktop value on mobile.
-   * Unset properties fall back to the desktop value.
-   */
+  objectFit?: CSSProperties["objectFit"];
+  objectPosition?: string;
   mobile?: ImageMobileConfig;
 }
 
@@ -47,27 +42,14 @@ export type ImageProps = {
   config: ImageConfig;
   devNode?: ReactNode;
   devMode?: boolean;
+  previewMode?: boolean;
 };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function getBorderStyle(border?: BorderConfig): CSSProperties {
   if (!border) return {};
   const style: CSSProperties = {};
-
   if (border.width && border.style && border.color) {
     style.border = `${border.width} ${border.style} ${border.color}`;
-  } else {
-    const hasIndividual =
-      border.top || border.right || border.bottom || border.left;
-    if (hasIndividual) {
-      style.borderTop = "none";
-      style.borderRight = "none";
-      style.borderBottom = "none";
-      style.borderLeft = "none";
-    }
   }
   if (border.top)
     style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
@@ -77,7 +59,6 @@ function getBorderStyle(border?: BorderConfig): CSSProperties {
     style.borderBottom = `${border.bottom.width} ${border.bottom.style} ${border.bottom.color}`;
   if (border.left)
     style.borderLeft = `${border.left.width} ${border.left.style} ${border.left.color}`;
-
   return style;
 }
 
@@ -85,308 +66,165 @@ function getBorderStyleString(border?: BorderConfig): string {
   if (!border) return "";
   const styles: string[] = [];
 
+  // Standard shorthand
   if (border.width && border.style && border.color) {
-    styles.push(`border:${border.width} ${border.style} ${border.color};`);
+    styles.push(
+      `border:${border.width} ${border.style} ${border.color} !important;`,
+    );
   } else {
-    const hasIndividual =
-      border.top || border.right || border.bottom || border.left;
-    if (hasIndividual) {
-      styles.push(
-        "border-top:none;",
-        "border-right:none;",
-        "border-bottom:none;",
-        "border-left:none;",
-      );
-    }
+    // If desktop had a border and mobile wants "none", we must explicitly kill it
+    styles.push(`border: none !important;`);
   }
+
+  // Individual sides
   if (border.top)
     styles.push(
-      `border-top:${border.top.width} ${border.top.style} ${border.top.color};`,
+      `border-top:${border.top.width} ${border.top.style} ${border.top.color} !important;`,
     );
   if (border.right)
     styles.push(
-      `border-right:${border.right.width} ${border.right.style} ${border.right.color};`,
+      `border-right:${border.right.width} ${border.right.style} ${border.right.color} !important;`,
     );
   if (border.bottom)
     styles.push(
-      `border-bottom:${border.bottom.width} ${border.bottom.style} ${border.bottom.color};`,
+      `border-bottom:${border.bottom.width} ${border.bottom.style} ${border.bottom.color} !important;`,
     );
   if (border.left)
     styles.push(
-      `border-left:${border.left.width} ${border.left.style} ${border.left.color};`,
+      `border-left:${border.left.width} ${border.left.style} ${border.left.color} !important;`,
     );
 
   return styles.join(" ");
 }
 
-// ---------------------------------------------------------------------------
-// Merged styles helper — applies mobile overrides on top of desktop values
-// ---------------------------------------------------------------------------
+function Image({ config, devNode, devMode }: ImageProps) {
+  const { src, alt, href, target, mobile } = config;
 
-function mergeConfig(config: ImageConfig, overrides?: ImageMobileConfig) {
-  return {
-    width: overrides?.width ?? config.width,
-    height: overrides?.height ?? config.height,
-    maxWidth: overrides?.maxWidth ?? config.maxWidth,
-    maxHeight: overrides?.maxHeight ?? config.maxHeight,
-    backgroundColor: overrides?.backgroundColor ?? config.backgroundColor,
-    padding: overrides?.padding ?? config.padding,
-    borderRadius: overrides?.borderRadius ?? config.borderRadius,
-    border: overrides?.border ?? config.border,
-  };
-}
+  const seed = src + (alt || "");
+  const instanceId = seed
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    .toString(36);
+  const imgClass = `img-${instanceId}`;
 
-// ---------------------------------------------------------------------------
-// Desktop table — JSX (same as original)
-// ---------------------------------------------------------------------------
+  // 1. Desktop Dimensional Logic
+  const desktopWidth = config.width || "100%";
+  const isPercent = desktopWidth.includes("%");
+  const widthAttr = desktopWidth.replace("px", "");
+  const heightAttr = config.height?.replace("px", "");
 
-function renderDesktopTable({
-  config,
-  className,
-  devNode,
-  devMode,
-}: {
-  config: ImageConfig;
-  className?: string;
-  devNode?: ReactNode;
-  devMode?: boolean;
-}) {
-  const { src, alt, href, target } = config;
-  const {
-    width,
-    height,
-    maxWidth,
-    maxHeight,
-    backgroundColor,
-    padding,
-    borderRadius,
-    border,
-  } = mergeConfig(config);
+  // Determine the table's "initial" width.
+  // If it's 300px, the table should be 300px, not 100%.
+  const tableWidth = isPercent ? desktopWidth : `${widthAttr}px`;
 
-  const borderStyle = getBorderStyle(border);
+  // 2. Mobile Overrides (Every property used)
+  let mobileCss = "";
+  if (mobile) {
+    mobileCss = `
+      @media screen and (max-width: 768px) {
+        .wrap-${imgClass} {
+          /* This breaks the px lock from desktop and makes it fluid */
+          width: ${mobile.width || "100%"} !important;
+          max-width: ${mobile.maxWidth || "100%"} !important;
+          min-width: 0 !important;
+        }
+        .td-${imgClass} {
+          padding: ${mobile.padding || "0"} !important;
+          background-color: ${mobile.backgroundColor || "transparent"} !important;
+          width: 100% !important;
+        }
+        .${imgClass} {
+          width: ${mobile.width || "100%"} !important;
+          height: ${mobile.height || "auto"} !important;
+          max-width: ${mobile.maxWidth || "100%"} !important;
+          max-height: ${mobile.maxHeight || "none"} !important;
+          border-radius: ${mobile.borderRadius || "0"} !important;
+          display: ${mobile.hidden ? "none" : "block"} !important;
+          object-fit: ${mobile.objectFit || "fill"} !important;
+          object-position: ${mobile.objectPosition || "center"} !important;
+          ${getBorderStyleString(mobile.border)}
+        }
+      }
+    `;
+  }
 
   const imgStyle: CSSProperties = {
     display: "block",
-    objectFit: "cover",
-    width: width || "100%",
-    height: height || "auto",
-    maxWidth: maxWidth || "100%",
-    maxHeight: maxHeight,
-    border: "0",
-    borderRadius: borderRadius,
-    ...borderStyle,
-  };
-
-  const linkStyle: CSSProperties = {
-    display: "block",
-    textDecoration: "none",
-    border: "0",
+    width: isPercent ? "100%" : desktopWidth,
+    height: config.height || "auto",
+    maxWidth: config.maxWidth || "100%",
+    maxHeight: config.maxHeight || "none",
+    borderRadius: config.borderRadius || "0",
+    ...getBorderStyle(config.border),
     outline: "none",
+    textDecoration: "none",
+    objectFit: config.objectFit,
+    objectPosition: config.objectPosition,
   };
-
-  const tdStyle: CSSProperties = {
-    padding: padding,
-    backgroundColor: backgroundColor,
-    fontSize: "0",
-    lineHeight: "0",
-  };
-
-  const widthNum = width?.endsWith("px") ? parseInt(width, 10) : undefined;
-  const maxWidthNum = maxWidth?.endsWith("px")
-    ? parseInt(maxWidth, 10)
-    : undefined;
-  const heightNum = height?.endsWith("px") ? parseInt(height, 10) : undefined;
 
   const imageElement = (
     <img
-      draggable={false}
       src={src}
       alt={alt}
+      width={!isPercent ? widthAttr : undefined}
+      height={heightAttr !== "auto" ? heightAttr : undefined}
+      className={imgClass}
       style={imgStyle}
-      width={
-        widthNum && maxWidthNum
-          ? Math.min(widthNum, maxWidthNum)
-          : widthNum || maxWidthNum
-      }
-      height={heightNum}
-      {...{ border: 0 as any }}
     />
   );
 
-  const content =
-    href && !devMode ? (
-      <a
-        href={href}
-        target={target}
-        style={linkStyle}
-        {...(target === "_blank" ? { rel: "noopener noreferrer" } : {})}
-      >
-        {imageElement}
-      </a>
-    ) : (
-      imageElement
-    );
-
-  return (
-    <table
-      aria-label={`Image Wrapper for: ${alt}`}
-      role="presentation"
-      cellPadding={0}
-      cellSpacing={0}
-      border={0}
-      className={className}
-      style={{
-        position: "relative",
-        width: width || "100%",
-        borderCollapse: "collapse",
-      }}
-      onClick={devMode ? (e) => e.preventDefault() : undefined}
-    >
-      <tbody>
-        <tr>
-          <td style={tdStyle} align="center">
-            {content}
-          </td>
-        </tr>
-      </tbody>
-      {devMode && !!devNode && (
-        <tfoot>
-          <tr>
-            <td>{devNode}</td>
-          </tr>
-        </tfoot>
-      )}
-    </table>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Mobile table — HTML string (injected via NonMso, same pattern as Icon VML)
-// ---------------------------------------------------------------------------
-
-function buildMobileTableHTML({
-  config,
-  overrides,
-  className,
-}: {
-  config: ImageConfig;
-  overrides: ImageMobileConfig;
-  className: string;
-}): string {
-  const { src, alt, href, target } = config;
-  const {
-    width,
-    height,
-    maxWidth,
-    maxHeight,
-    backgroundColor,
-    padding,
-    borderRadius,
-    border,
-  } = mergeConfig(config, overrides);
-
-  const borderStyleStr = getBorderStyleString(border);
-
-  const widthNum = width?.endsWith("px") ? parseInt(width, 10) : undefined;
-  const maxWidthNum = maxWidth?.endsWith("px")
-    ? parseInt(maxWidth, 10)
-    : undefined;
-  const heightNum = height?.endsWith("px") ? parseInt(height, 10) : undefined;
-  const resolvedWidth =
-    widthNum && maxWidthNum
-      ? Math.min(widthNum, maxWidthNum)
-      : widthNum || maxWidthNum;
-
-  const imgTag = `<img
-    draggable="false"
-    src="${src}"
-    alt="${alt}"
-    ${resolvedWidth ? `width="${resolvedWidth}"` : ""}
-    ${heightNum ? `height="${heightNum}"` : ""}
-    border="0"
-    style="display:block;object-fit:cover;width:${width || "100%"};height:${height || "auto"};max-width:${maxWidth || "100%"};${maxHeight ? `max-height:${maxHeight};` : ""}border:0;${borderRadius ? `border-radius:${borderRadius};` : ""}${borderStyleStr}"
-  />`;
-
-  const content = href
-    ? `<a href="${href}" target="${target || "_self"}" style="display:block;text-decoration:none;border:0;outline:none;"${target === "_blank" ? ' rel="noopener noreferrer"' : ""}>${imgTag}</a>`
-    : imgTag;
-
-  return `
-    <table
-      aria-label="Image Wrapper for: ${alt}"
-      role="presentation"
-      cellpadding="0"
-      cellspacing="0"
-      border="0"
-      class="${className}"
-      style="position:relative;width:${width || "100%"};border-collapse:collapse;"
-    >
-      <tbody>
-        <tr>
-          <td
-            align="center"
-            style="padding:${padding || ""};background-color:${backgroundColor || ""};font-size:0;line-height:0;"
-          >
-            ${content}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  `;
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-function Image({ config, devNode, devMode }: ImageProps) {
-  const { mobile } = config;
-  const hasMobileOverrides = !!mobile && !mobile.hidden;
-  const isHiddenOnMobile = !!mobile?.hidden;
-
   return (
     <>
-      {/*
-       * Desktop table — JSX, always rendered.
-       *
-       * - no mobile config     → no class (shows everywhere)
-       * - mobile.hidden = true → hide-on-mobile (hidden on mobile, no mobile table)
-       * - mobile overrides set → hide-on-mobile (replaced by mobile table on small screens)
-       */}
-      {renderDesktopTable({
-        config,
-        className:
-          hasMobileOverrides || isHiddenOnMobile ? "hide-on-mobile" : undefined,
-        devNode,
-        devMode,
-      })}
-
-      {/*
-       * Mobile table — HTML string injected via NonMso <td>.
-       * Not rendered when mobile.hidden is true — the desktop table
-       * simply does not appear on mobile in that case.
-       */}
-      {hasMobileOverrides && !devMode && (
-        <table
-          role="presentation"
-          cellPadding={0}
-          cellSpacing={0}
-          border={0}
-          style={{ width: "100%", borderCollapse: "collapse" }}
-        >
-          <tbody>
+      {mobile && <style dangerouslySetInnerHTML={{ __html: mobileCss }} />}
+      <table
+        role="presentation"
+        cellPadding={0}
+        cellSpacing={0}
+        border={0}
+        className={`wrap-${imgClass}`}
+        align="center" // Ensures a 300px image stays centered in its parent
+        style={{
+          width: tableWidth, // Fixed px here prevents the 100% "ghost space"
+          maxWidth: "100%",
+          borderCollapse: "collapse",
+          margin: "0 auto",
+        }}
+      >
+        <tbody>
+          <tr>
+            <td
+              className={`td-${imgClass}`}
+              align="center"
+              style={{
+                padding: config.padding,
+                backgroundColor: config.backgroundColor,
+                fontSize: "0",
+                lineHeight: "0",
+                width: tableWidth, // Lock the cell as well
+              }}
+            >
+              {href && !devMode ? (
+                <a
+                  href={href}
+                  target={target}
+                  style={{ display: "block", width: "100%" }}
+                >
+                  {imageElement}
+                </a>
+              ) : (
+                imageElement
+              )}
+            </td>
+          </tr>
+        </tbody>
+        {devMode && !!devNode && (
+          <tfoot>
             <tr>
-              <NonMso
-                html={buildMobileTableHTML({
-                  config,
-                  overrides: mobile,
-                  className: "hide-on-desktop",
-                })}
-              />
+              <td>{devNode}</td>
             </tr>
-          </tbody>
-        </table>
-      )}
+          </tfoot>
+        )}
+      </table>
     </>
   );
 }

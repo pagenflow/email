@@ -34,6 +34,17 @@ export interface RowConfig {
   width?: string;
   height?: string;
 
+  /**
+   * When true, the content table uses width:100% so Outlook Classic has a
+   * hard boundary and text children can wrap correctly.
+   * Use this for rows that contain text blocks alongside images.
+   *
+   * When false/undefined (default), the content table uses width:auto so
+   * children shrink-wrap to their natural sizes — preserving the original
+   * behavior. Use this for icon rows, button rows, social link rows.
+   */
+  fillWidth?: boolean;
+
   // Styling props
   padding?: string;
   backgroundColor?: string;
@@ -130,28 +141,22 @@ function Row({ children, config, devNode, devMode }: RowProps) {
   const href = getHrefFromInnerLink(config.innerLink);
   const target = config.innerLink?.target;
 
-  // 1. Outer TD for Background and Border Radius (no border here).
-  //    height declared here is the *total* outer height.
+  // 1. Outer TD: Background, Border Radius, Width, Height.
   const backgroundTdStyle: React.CSSProperties = {
     backgroundColor: config.backgroundColor,
     borderRadius: config.borderRadius,
     width: config.width || "100%",
     height: config.height,
-
-    // Background Image styles
     backgroundImage: config.backgroundImage
       ? `url(${config.backgroundImage.src})`
       : undefined,
     backgroundRepeat: config.backgroundImage?.repeat,
     backgroundSize: config.backgroundImage?.size,
     backgroundPosition: config.backgroundImage?.position,
-
-    // Overflow hidden to clip background to border-radius
     ...(config.borderRadius && { overflow: "hidden" }),
   };
 
-  // 2. Inner Table for Border and Border Radius.
-  //    height: 100% so it stretches to fill the outer TD.
+  // 2. Inner Table: Border and Border Radius.
   const borderTableStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
@@ -161,27 +166,33 @@ function Row({ children, config, devNode, devMode }: RowProps) {
     ...getBorderStyle(config.border),
   };
 
-  // 3. TD for Padding only — no height.
-  //    The outer TD owns the total height; setting height here would cause
-  //    browsers/email clients to treat it as content-box height and add
-  //    padding on top, making the row taller than the declared height.
+  // 3. Padding TD.
   const paddingTdStyle: React.CSSProperties = {
     padding: config.padding,
     width: "100%",
-    // height intentionally omitted — padding must be inner, not additive
     verticalAlign: "top",
   };
 
-  // 4. Content Table - horizontal layout
+  // 4. Content Table.
+  //
+  //    fillWidth: false/undefined (default) → width: "auto"
+  //      Original behavior. Children shrink-wrap to their natural sizes.
+  //      Use for icon rows, button rows, social link rows.
+  //      Centering works via the Justification Wrapper TD (align + width="100%").
+  //
+  //    fillWidth: true → width: "100%"
+  //      Content table fills available space, giving Outlook Classic a hard
+  //      boundary so text children get a constrained box and line wrapping
+  //      triggers correctly. Use for rows containing text + image layouts.
   const contentTableStyle: React.CSSProperties = {
-    width: "auto",
+    width: config.fillWidth ? "100%" : "auto",
     height: "100%",
     borderCollapse: "collapse",
     minWidth: "1px",
-    maxWidth: config.width || "100%",
+    ...(!config.fillWidth && { maxWidth: config.width || "100%" }),
   };
 
-  // 5. Gap styles for horizontal spacing between children
+  // 5. Gap TD.
   const gapTdStyle: React.CSSProperties = {
     width: config.gap || "0",
     lineHeight: "1px",
@@ -193,7 +204,6 @@ function Row({ children, config, devNode, devMode }: RowProps) {
     : "left";
   const tdValign = config.alignItems ? alignMap[config.alignItems] : "top";
 
-  // Content to render - wrapped in anchor if innerLink is defined
   const content = (
     <table
       aria-label="Row Outer"
@@ -216,7 +226,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
             style={backgroundTdStyle}
             {...(config.height && { height: config.height })}
           >
-            {/* Inner Table: Border and Border Radius — fills outer TD via height: 100% */}
+            {/* Inner Table: Border and Border Radius */}
             <table
               aria-label="Row Border Wrapper"
               role="presentation"
@@ -227,7 +237,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
             >
               <tbody>
                 <tr>
-                  {/* Padding TD — no height, padding is inner spacing only */}
+                  {/* Padding TD */}
                   <td style={paddingTdStyle}>
                     <table
                       aria-label="Row Justification Wrapper"
@@ -243,7 +253,18 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                     >
                       <tbody>
                         <tr>
-                          <td align={tdAlign}>
+                          {/*
+                           * width="100%" as HTML attribute (respected by Outlook Classic)
+                           * establishes the outer boundary for text wrapping when fillWidth
+                           * is true. align handles justifyContent for both modes:
+                           * - fillWidth: false → centers the auto-width content table
+                           * - fillWidth: true  → aligns content within the full-width table
+                           */}
+                          <td
+                            align={tdAlign}
+                            width="100%"
+                            style={{ width: "100%" }}
+                          >
                             <table
                               aria-label="Row Content"
                               role="presentation"
@@ -264,7 +285,6 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                             >
                               <tbody>
                                 <tr className="content-tr">
-                                  {/* Horizontal layout with gap support */}
                                   {childrenArray.map((child, index) => (
                                     <Fragment key={`row-child-${index}`}>
                                       <td
@@ -280,7 +300,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                                         {child}
                                       </td>
 
-                                      {/* Add horizontal gap between children (not after last child) */}
+                                      {/* Gap between children, not after last */}
                                       {index < numChildren - 1 &&
                                         config.gap && (
                                           <td
@@ -318,7 +338,6 @@ function Row({ children, config, devNode, devMode }: RowProps) {
     </table>
   );
 
-  // Wrap in anchor tag if innerLink is defined and NOT in dev mode
   if (href && !devMode) {
     return (
       <a

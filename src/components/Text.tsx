@@ -55,6 +55,7 @@ export interface TextConfig {
 
   /** Word break behavior (e.g., 'break-all', 'break-word', 'keep-all', 'normal'). */
   wordBreak?: string;
+  maxWidth?: string;
 }
 
 export type TextProps = {
@@ -83,6 +84,7 @@ function Text({ config, devMode, children }: TextProps) {
     opacity,
     whiteSpace,
     wordBreak = "break-all",
+    maxWidth
   } = config;
 
   // 1. TD Style: Where padding and background are reliably applied.
@@ -112,6 +114,7 @@ function Text({ config, devMode, children }: TextProps) {
     wordBreak: wordBreak as any,
     margin: "0",
     padding: "0",
+    maxWidth
   };
 
   // Determine content to render

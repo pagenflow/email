@@ -5,6 +5,7 @@ export interface GlobalConfig {
   fontSize?: string;
   backgroundColor?: string;
   lineHeight?: string;
+  fontFamily?: string;
   backgroundImage?: {
     src?: string;
     repeat?: string;
@@ -25,6 +26,7 @@ export default function Body({ children, config = {} }: BodyProps) {
   const globalFontSize = config.fontSize || "16px";
   const globalBackgroundColor = config.backgroundColor || "#ffffff";
   const globalLineHeight = config.lineHeight || "1.4";
+  const globalFontFamily = config.fontFamily || "Arial, Helvetica, sans-serif";
 
   // Background image properties
   const bgImage = config.backgroundImage?.src || "";
@@ -43,14 +45,10 @@ export default function Body({ children, config = {} }: BodyProps) {
     WebkitTextSizeAdjust: "100%",
     overflowX: "hidden",
 
-    // ✅ FIX 1: Use string indexing for MSO property
-    // ['ms-text-size-adjust' as string]: '100%',
     ["msTextSizeAdjust" as string]: "100%",
-    // ["mso-line-height-rule" as string]: "exactly",
     ["msoLineHeightRule" as string]: "exactly",
 
-    // Base font for body
-    fontFamily: "Arial, Helvetica, sans-serif",
+    fontFamily: globalFontFamily,
 
     // Background image support (if provided)
     ...(bgImage && {
@@ -64,18 +62,12 @@ export default function Body({ children, config = {} }: BodyProps) {
   // 2. Style for the top-level <table> wrapper
   const outerTableStyle: CSSProperties = {
     width: "100%",
-
-    // ✅ FIX 1 (on table): Use string indexing for MSO property
     ["msoLineHeightRule" as string]: "exactly",
-    // ['mso-line-height-rule' as string]: 'exactly',
-
     borderCollapse: "collapse",
   };
 
   return (
-    // The <body> tag with inline styles
     <body style={bodyStyle}>
-      {/* Center tag is a legacy but reliable way to center content in some clients */}
       <center
         style={{
           width: "100%",
@@ -88,20 +80,18 @@ export default function Body({ children, config = {} }: BodyProps) {
           }),
         }}
       >
-        {/* Top-level table for background, centering, and wrapping content */}
         <table
           role="presentation"
-          border={0 as any} // 🔒 Use number attribute and type assertion for border
+          border={0 as any}
           cellPadding={0}
           cellSpacing={0}
           align="center"
           width="100%"
-          style={outerTableStyle} // Use the type-safe style object
+          style={outerTableStyle}
         >
           <tbody>
             <tr>
               <td align="center" style={{ padding: "0", margin: "0" }}>
-                {/* All email content (Sections, Containers, etc.) goes here */}
                 {children}
               </td>
             </tr>
@@ -109,7 +99,6 @@ export default function Body({ children, config = {} }: BodyProps) {
         </table>
       </center>
 
-      {/* MSO fix for bottom scrollbar */}
       <div
         style={{
           display: "none",
