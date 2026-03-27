@@ -1,6 +1,6 @@
 import { CSSProperties, memo, ReactNode } from "react";
-import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
+import { arePropsEqual } from "../utils/memoUtils";
 
 // Helper for alignment
 type TdAlign = "center" | "left" | "right";
@@ -94,46 +94,6 @@ const justifyMap: Record<
   end: "right",
 };
 
-function getBorderStyle(border?: BorderConfig): CSSProperties {
-  if (!border) return {};
-
-  const style: CSSProperties = {};
-
-  // If a full border is specified, apply it
-  if (border.width && border.style && border.color) {
-    style.border = `${border.width} ${border.style} ${border.color}`;
-  } else {
-    // If only individual borders are specified, explicitly set others to 'none'
-    // to prevent Outlook Classic from showing black borders
-    const hasIndividualBorders =
-      border.top || border.right || border.bottom || border.left;
-
-    if (hasIndividualBorders) {
-      // Default all borders to none
-      style.borderTop = "none";
-      style.borderRight = "none";
-      style.borderBottom = "none";
-      style.borderLeft = "none";
-    }
-  }
-
-  // Override with specific borders if provided
-  if (border.top) {
-    style.borderTop = `${border.top.width} ${border.top.style} ${border.top.color}`;
-  }
-  if (border.right) {
-    style.borderRight = `${border.right.width} ${border.right.style} ${border.right.color}`;
-  }
-  if (border.bottom) {
-    style.borderBottom = `${border.bottom.width} ${border.bottom.style} ${border.bottom.color}`;
-  }
-  if (border.left) {
-    style.borderLeft = `${border.left.width} ${border.left.style} ${border.left.color}`;
-  }
-
-  return style;
-}
-
 function getBorderStyleString(border?: BorderConfig): string {
   if (!border) return "";
 
@@ -214,28 +174,7 @@ function Button({ config, devMode }: ButtonProps) {
     ? fontFamily.replace(/['"]/g, "")
     : fontFamily;
 
-  // 1. Link (A) Tag Styles (Fallback for Webmail/Mobile)
-  const linkStyle: CSSProperties = {
-    color: color,
-    textDecoration: textDecoration,
-    display: "block",
-    padding: padding,
-    wordBreak: wordBreak as any,
-    fontFamily: fontFamily,
-    fontSize: fontSize,
-    fontWeight: fontWeight,
-    fontStyle: fontStyle,
-    lineHeight: lineHeight,
-    letterSpacing: letterSpacing,
-    textTransform: textTransform as any,
-    textAlign: textAlign,
-    direction: direction as any,
-    verticalAlign: verticalAlign,
-    opacity: opacity,
-    whiteSpace: whiteSpace as any,
-  };
-
-  // 2. Outer TD Style for Background and Border Radius (no border)
+  // Outer TD Style for Background and Border Radius (no border)
   const backgroundTdStyle: CSSProperties = {
     backgroundColor: backgroundColor,
     borderRadius: borderRadius,
@@ -245,8 +184,7 @@ function Button({ config, devMode }: ButtonProps) {
     ...(borderRadius && { overflow: "hidden" }),
   };
 
-  // 3. Border styles
-  const borderStyle = getBorderStyle(border);
+  // Border styles
   const borderStyleString = getBorderStyleString(border);
 
   // --- Determine Button Approach Based on Width ---
@@ -261,9 +199,6 @@ function Button({ config, devMode }: ButtonProps) {
   let vmlButton = "";
 
   if (!useSimpleOutlookApproach) {
-    // Parse maxWidth if provided (always in px)
-    const maxWidthPx = maxWidth ? parseInt(maxWidth, 10) : null;
-
     // VML needs fixed pixel height. We estimate it based on padding and potential wrapping.
     const numericPadding = parseInt(padding.split(" ")[0] || "12", 10);
     const numericFontSize = parseInt(fontSize, 10);
@@ -486,7 +421,7 @@ function Button({ config, devMode }: ButtonProps) {
                   <td
                     dangerouslySetInnerHTML={{
                       __html: `
-      ${devMode ? "" : useSimpleOutlookApproach ? simpleOutlookButton : vmlButton}
+      ${useSimpleOutlookApproach ? simpleOutlookButton : vmlButton}
       <!--[if !mso]><!-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
@@ -498,11 +433,11 @@ function Button({ config, devMode }: ButtonProps) {
                     <td style="padding: 0;">
                       ${
                         devMode
-                          ? `<span style="${sharedTextStyles} display: block; text-align: ${textAlign}; word-break: ${wordBreak}; padding: ${padding};">
+                          ? `<span style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; word-break: ${wordBreak}; text-align: ${textAlign}; padding: ${padding};">
                               ${typeof children === "string" ? children : ""}
                             </span>`
                           : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; word-break: ${wordBreak}; text-align: ${textAlign}; padding: ${padding};">
-                              <span style="${sharedTextStyles}">
+                              <span>
                                 ${typeof children === "string" ? children : ""}
                               </span>
                             </a>`

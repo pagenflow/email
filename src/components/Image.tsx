@@ -117,6 +117,23 @@ function Image({ config, devNode, devMode }: ImageProps) {
   // If it's 300px, the table should be 300px, not 100%.
   const tableWidth = isPercent ? desktopWidth : `${widthAttr}px`;
 
+  // When width is a percentage, Outlook ignores CSS and renders the image at
+  // its intrinsic pixel size. Setting a concrete `width` HTML attribute gives
+  // Outlook a value to constrain against while modern clients continue to use
+  // the CSS `width: 100%` for fluid rendering.
+  //
+  // If `maxWidth` is a pixel value (e.g. "600px"), we extract the number and
+  // use it as the HTML `width` attribute so Outlook enforces that cap.
+  // Other clients ignore the attribute and rely on CSS styles instead.
+  // If `maxWidth` is not set or is not a pixel value (e.g. "100%"), we fall
+  // back to the original behaviour (numeric string for px widths, undefined
+  // for % widths).
+  const maxWidthPx = config.maxWidth?.endsWith("px")
+    ? parseInt(config.maxWidth, 10)
+    : undefined;
+
+  const imgWidthAttr = isPercent ? (maxWidthPx ?? undefined) : widthAttr;
+
   // 2. Mobile Overrides (Every property used)
   let mobileCss = "";
   if (mobile) {
@@ -166,7 +183,7 @@ function Image({ config, devNode, devMode }: ImageProps) {
     <img
       src={src}
       alt={alt}
-      width={!isPercent ? widthAttr : undefined}
+      width={imgWidthAttr}
       height={heightAttr !== "auto" ? heightAttr : undefined}
       className={imgClass}
       style={imgStyle}
