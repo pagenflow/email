@@ -139,7 +139,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
   const numChildren = childrenArray.length;
 
   const href = getHrefFromInnerLink(config.innerLink);
-  const target = config.innerLink?.target;
+  const target = config.innerLink?.target || "_blank";
 
   // 1. Outer TD: Background, Border Radius, Width, Height.
   const backgroundTdStyle: React.CSSProperties = {

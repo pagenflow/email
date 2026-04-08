@@ -1,13 +1,14 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { BorderConfig } from "../types";
+import IInnerLink from "../types/IInnerLink";
 import { arePropsEqual } from "../utils/memoUtils";
 
 // Helper for alignment
 type TdAlign = "center" | "left" | "right";
 
 export interface ButtonConfig {
-  /** The destination URL for the button. Required. */
-  href: string;
+  /** Link configuration for the button destination. Required. */
+  innerLink?: IInnerLink;
 
   /** Button text. */
   children: ReactNode;
@@ -94,6 +95,28 @@ const justifyMap: Record<
   end: "right",
 };
 
+// Helper to build link href based on innerLink type (mirrors Icon component)
+function buildLinkHref(innerLink?: IInnerLink): string | null {
+  if (!innerLink || innerLink.type === "none") return null;
+
+  switch (innerLink.type) {
+    case "url":
+      return innerLink.url || null;
+    case "email":
+      return innerLink.email ? `mailto:${innerLink.email}` : null;
+    case "phone":
+      return innerLink.phone ? `tel:${innerLink.phone}` : null;
+    case "anchor":
+      return innerLink.anchor ? `#${innerLink.anchor}` : null;
+    case "page_top":
+      return "#top";
+    case "page_bottom":
+      return "#bottom";
+    default:
+      return null;
+  }
+}
+
 function getBorderStyleString(border?: BorderConfig): string {
   if (!border) return "";
 
@@ -143,31 +166,35 @@ function getBorderStyleString(border?: BorderConfig): string {
 
 function Button({ config, devMode }: ButtonProps) {
   const {
-    href,
+    innerLink,
     children,
-    backgroundColor = "#007bff", // Default blue
-    color = "#ffffff",
-    padding = "12px 24px",
-    borderRadius = "3px",
+    backgroundColor,
+    color,
+    padding,
+    borderRadius,
     border,
     width,
     maxWidth,
-    justifyContent = "center",
-    textAlign = "center",
-    fontSize = "16px",
-    fontWeight = "500",
+    justifyContent,
+    textAlign,
+    fontSize,
+    fontWeight,
     fontStyle,
-    fontFamily = "Arial, sans-serif",
-    lineHeight = "1.2",
+    fontFamily,
+    lineHeight,
     letterSpacing,
     textTransform,
-    textDecoration = "none",
+    textDecoration,
     direction,
     verticalAlign,
     opacity,
-    whiteSpace = "normal",
-    wordBreak = "break-word",
+    whiteSpace,
+    wordBreak,
   } = config;
+
+  // Resolve href from innerLink
+  const href = buildLinkHref(innerLink);
+  const target = innerLink?.target || "_blank";
 
   // Sanitize fontFamily early so safeFontFamily is available for all paths below.
   const safeFontFamily = fontFamily
@@ -193,18 +220,20 @@ function Button({ config, devMode }: ButtonProps) {
   const isPercentageWidth = !width || width.includes("%");
   const useSimpleOutlookApproach = isPercentageWidth;
 
-  const align = justifyMap[justifyContent];
+  const align = justifyContent ? justifyMap[justifyContent] : undefined;
 
   // --- VML Calculation and Code for Outlook Compatibility (Fixed Width Only) ---
   let vmlButton = "";
 
   if (!useSimpleOutlookApproach) {
     // VML needs fixed pixel height. We estimate it based on padding and potential wrapping.
-    const numericPadding = parseInt(padding.split(" ")[0] || "12", 10);
-    const numericFontSize = parseInt(fontSize, 10);
-    const numericLineHeight = lineHeight.includes("px")
-      ? parseInt(lineHeight, 10)
-      : numericFontSize * parseFloat(lineHeight);
+    const numericPadding = padding ? parseInt(padding.split(" ")[0] || "12", 10) : 12;
+    const numericFontSize = fontSize ? parseInt(fontSize, 10) : 0;
+    const numericLineHeight = lineHeight
+      ? lineHeight.includes("px")
+        ? parseInt(lineHeight, 10)
+        : numericFontSize * parseFloat(lineHeight)
+      : numericFontSize;
 
     // Trust user's explicit pixel width - no calculation needed
     const vmlWidth = parseInt(width, 10);
@@ -214,7 +243,7 @@ function Button({ config, devMode }: ButtonProps) {
     const textContent = typeof children === "string" ? children : "";
 
     // Estimate number of lines based on text length and button width
-    const horizontalPadding = padding.split(" ")[1]
+    const horizontalPadding = padding?.split(" ")[1]
       ? parseInt(padding.split(" ")[1], 10) * 2
       : numericPadding * 2;
 
@@ -237,9 +266,11 @@ function Button({ config, devMode }: ButtonProps) {
     const vmlHeight = Math.max(numericPadding * 2 + textHeight + 4, 40);
 
     // VML colors must use the full hex format (e.g., #000000)
-    const vmlFillColor = backgroundColor.startsWith("#")
-      ? backgroundColor
-      : `#${backgroundColor}`;
+    const vmlFillColor = backgroundColor
+      ? backgroundColor.startsWith("#")
+        ? backgroundColor
+        : `#${backgroundColor}`
+      : undefined;
 
     // VML stroke color for border
     const vmlStrokeColor = border?.color || vmlFillColor;
@@ -247,7 +278,7 @@ function Button({ config, devMode }: ButtonProps) {
     const hasVmlStroke = vmlStrokeWeight > 0;
 
     // Build VML font styles - consistent with other rendering paths
-    const vmlFontWeight = fontWeight || "500";
+    const vmlFontWeight = fontWeight;
     const vmlFontStyle = fontStyle === "italic" ? "font-style:italic;" : "";
     const vmlLetterSpacing = letterSpacing
       ? `letter-spacing:${letterSpacing};`
@@ -260,13 +291,13 @@ function Button({ config, devMode }: ButtonProps) {
         ? `text-decoration:${textDecoration};`
         : "";
     const vmlWhiteSpace =
-      whiteSpace !== "normal" ? `white-space:${whiteSpace};` : "";
+      whiteSpace ? `white-space:${whiteSpace};` : "";
     const vmlDirection = direction ? `direction:${direction};` : "";
     const vmlOpacity = opacity !== undefined ? `opacity:${opacity};` : "";
 
     // VML code uses MSO conditional comments to render only in Outlook
     // Use table with explicit MSO height for vertical centering
-    const horizontalPaddingValue = padding.split(" ")[1]
+    const horizontalPaddingValue = padding?.split(" ")[1]
       ? parseInt(padding.split(" ")[1], 10)
       : numericPadding;
 
@@ -275,7 +306,7 @@ function Button({ config, devMode }: ButtonProps) {
     let vmlAlignStyle = "";
     if (textAlign === "center") {
       vmlAlignAttr = 'align="center"';
-    } else {
+    } else if (textAlign) {
       vmlAlignStyle = `text-align:${textAlign};`;
     }
 
@@ -284,12 +315,12 @@ function Button({ config, devMode }: ButtonProps) {
     // is inconsistent, so we render sharp corners there instead.
     vmlButton = `
     <!--[if mso]>
-    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${href}" style="height:${vmlHeight}px;width:${vmlWidth}px;" arcsize="0%" strokecolor="${vmlStrokeColor}" ${hasVmlStroke ? `strokeweight="${vmlStrokeWeight}px"` : 'stroke="f"'} fillcolor="${vmlFillColor}">
+    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" ${href ? `href="${href}"` : ""} style="height:${vmlHeight}px;width:${vmlWidth}px;" arcsize="0%" ${vmlStrokeColor ? `strokecolor="${vmlStrokeColor}"` : ""} ${hasVmlStroke ? `strokeweight="${vmlStrokeWeight}px"` : 'stroke="f"'} ${vmlFillColor ? `fillcolor="${vmlFillColor}"` : ""}>
       <w:anchorlock/>
       <v:textbox inset="${horizontalPaddingValue}px,${numericPadding}px,${horizontalPaddingValue}px,${numericPadding}px">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
           <tr>
-            <td ${vmlAlignAttr} valign="middle" style="${vmlAlignStyle}color:${color};font-family:${safeFontFamily};font-size:${fontSize};font-weight:${vmlFontWeight};${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}${vmlDirection}${vmlOpacity}line-height:${lineHeight};mso-line-height-rule:exactly;">
+            <td ${vmlAlignAttr} valign="middle" style="${vmlAlignStyle}${color ? `color:${color};` : ""}${safeFontFamily ? `font-family:${safeFontFamily};` : ""}${fontSize ? `font-size:${fontSize};` : ""}${vmlFontWeight ? `font-weight:${vmlFontWeight};` : ""}${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}${vmlDirection}${vmlOpacity}${lineHeight ? `line-height:${lineHeight};` : ""}mso-line-height-rule:exactly;">
               ${typeof children === "string" ? children : ""}
             </td>
           </tr>
@@ -316,12 +347,10 @@ function Button({ config, devMode }: ButtonProps) {
     const textTransformProp = textTransform
       ? `text-transform: ${textTransform};`
       : "";
-    const whiteSpaceProp =
-      whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : "";
+    const whiteSpaceProp = whiteSpace ? `white-space: ${whiteSpace};` : "";
     const directionProp = direction ? `direction: ${direction};` : "";
     const opacityProp = opacity !== undefined ? `opacity: ${opacity};` : "";
-    const wordBreakProp =
-      wordBreak !== "break-word" ? `word-break: ${wordBreak};` : "";
+    const wordBreakProp = wordBreak ? `word-break: ${wordBreak};` : "";
 
     // Border radius is intentionally omitted from the Outlook Classic table cell.
     // Outlook Classic ignores border-radius on table cells anyway, and including it
@@ -330,13 +359,19 @@ function Button({ config, devMode }: ButtonProps) {
     <!--[if mso]>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
       <tr>
-        <td align="${align}" style="padding: 0;">
+        <td ${align ? `align="${align}"` : ""} style="padding: 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${width || "auto"}" style="border-collapse: collapse;">
             <tr>
-              <td bgcolor="${backgroundColor}" align="${textAlign}" style="padding: ${padding}; text-align: ${textAlign}; ${borderStyleString}">
-                <a href="${href}" target="_blank" rel="noopener noreferrer" style="color: ${color}; ${textDecorationStyle} display: block; font-family: ${safeFontFamily}; font-size: ${fontSize}; font-weight: ${fontWeight}; ${fontStyleProp} line-height: ${lineHeight}; ${letterSpacingProp} ${textTransformProp} text-align: ${textAlign}; ${whiteSpaceProp} ${directionProp} ${opacityProp} ${wordBreakProp} mso-line-height-rule: exactly;">
-                  ${typeof children === "string" ? children : ""}
-                </a>
+              <td ${backgroundColor ? `bgcolor="${backgroundColor}"` : ""} ${textAlign ? `align="${textAlign}"` : ""} style="${padding ? `padding: ${padding};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${borderStyleString}">
+                ${
+                  href
+                    ? `<a href="${href}" target="${target}" rel="noopener noreferrer" style="${color ? `color: ${color};` : ""} ${textDecorationStyle} display: block; ${safeFontFamily ? `font-family: ${safeFontFamily};` : ""} ${fontSize ? `font-size: ${fontSize};` : ""} ${fontWeight ? `font-weight: ${fontWeight};` : ""} ${fontStyleProp} ${lineHeight ? `line-height: ${lineHeight};` : ""} ${letterSpacingProp} ${textTransformProp} ${textAlign ? `text-align: ${textAlign};` : ""} ${whiteSpaceProp} ${directionProp} ${opacityProp} ${wordBreakProp} mso-line-height-rule: exactly;">
+                        ${typeof children === "string" ? children : ""}
+                      </a>`
+                    : `<span style="${color ? `color: ${color};` : ""} ${textDecorationStyle} display: block; ${safeFontFamily ? `font-family: ${safeFontFamily};` : ""} ${fontSize ? `font-size: ${fontSize};` : ""} ${fontWeight ? `font-weight: ${fontWeight};` : ""} ${fontStyleProp} ${lineHeight ? `line-height: ${lineHeight};` : ""} ${letterSpacingProp} ${textTransformProp} ${textAlign ? `text-align: ${textAlign};` : ""} ${whiteSpaceProp} ${directionProp} ${opacityProp} ${wordBreakProp} mso-line-height-rule: exactly;">
+                        ${typeof children === "string" ? children : ""}
+                      </span>`
+                }
               </td>
             </tr>
           </table>
@@ -351,7 +386,7 @@ function Button({ config, devMode }: ButtonProps) {
   // fontFamily uses the sanitized value so embedded quotes never break the
   // style attribute string (which is always wrapped in double quotes).
   const sharedTextStyles = [
-    `color: ${color};`,
+    color ? `color: ${color};` : "",
     safeFontFamily ? `font-family: ${safeFontFamily};` : "",
     fontSize ? `font-size: ${fontSize};` : "",
     fontWeight ? `font-weight: ${fontWeight};` : "",
@@ -364,7 +399,7 @@ function Button({ config, devMode }: ButtonProps) {
       : "",
     direction ? `direction: ${direction};` : "",
     opacity !== undefined ? `opacity: ${opacity};` : "",
-    whiteSpace !== "normal" ? `white-space: ${whiteSpace};` : "",
+    whiteSpace ? `white-space: ${whiteSpace};` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -426,21 +461,25 @@ function Button({ config, devMode }: ButtonProps) {
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
           <tr>
-            <td style="background-color: ${backgroundTdStyle.backgroundColor}; border-radius: ${backgroundTdStyle.borderRadius}; width: ${backgroundTdStyle.width}; ${maxWidth ? `max-width: ${maxWidth};` : ""} ${borderRadius ? "overflow: hidden;" : ""}">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; border-radius: ${borderRadius}; width: 100%; ${borderStyleString}">
+            <td style="${backgroundTdStyle.backgroundColor ? `background-color: ${backgroundTdStyle.backgroundColor};` : ""} ${backgroundTdStyle.borderRadius ? `border-radius: ${backgroundTdStyle.borderRadius};` : ""} width: ${backgroundTdStyle.width}; ${maxWidth ? `max-width: ${maxWidth};` : ""} ${borderRadius ? "overflow: hidden;" : ""}">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; ${borderRadius ? `border-radius: ${borderRadius};` : ""} width: 100%; ${borderStyleString}">
                 <tbody>
                   <tr>
                     <td style="padding: 0;">
                       ${
                         devMode
-                          ? `<span style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; word-break: ${wordBreak}; text-align: ${textAlign}; padding: ${padding};">
+                          ? `<span style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; ${wordBreak ? `word-break: ${wordBreak};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${padding ? `padding: ${padding};` : ""}">
                               ${typeof children === "string" ? children : ""}
                             </span>`
-                          : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; word-break: ${wordBreak}; text-align: ${textAlign}; padding: ${padding};">
-                              <span>
+                          : href
+                            ? `<a href="${href}" target="${target}" rel="noopener noreferrer" style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; ${wordBreak ? `word-break: ${wordBreak};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${padding ? `padding: ${padding};` : ""}">
+                                <span>
+                                  ${typeof children === "string" ? children : ""}
+                                </span>
+                              </a>`
+                            : `<span style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; ${wordBreak ? `word-break: ${wordBreak};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${padding ? `padding: ${padding};` : ""}">
                                 ${typeof children === "string" ? children : ""}
-                              </span>
-                            </a>`
+                              </span>`
                       }
                     </td>
                   </tr>

@@ -1,6 +1,13 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
+import IInnerLink from "../types/IInnerLink";
+
+/**
+ * RULES NOT TO BE REMOVED
+ * -------------------
+ * - Image should not be draggable in dev mode as we don't want to disrupt the builder dnd behavior
+ */
 
 // ---------------------------------------------------------------------------
 // Types & Helpers (Kept internal for zero-dependency portability)
@@ -31,8 +38,7 @@ export interface ImageConfig {
   padding?: string;
   borderRadius?: string;
   border?: BorderConfig;
-  href?: string;
-  target?: string;
+  innerLink?: IInnerLink;
   objectFit?: CSSProperties["objectFit"];
   objectPosition?: string;
   mobile?: ImageMobileConfig;
@@ -44,6 +50,28 @@ export type ImageProps = {
   devMode?: boolean;
   previewMode?: boolean;
 };
+
+// Helper to build link href based on innerLink type
+function buildLinkHref(innerLink?: IInnerLink): string | null {
+  if (!innerLink || innerLink.type === "none") return null;
+
+  switch (innerLink.type) {
+    case "url":
+      return innerLink.url || null;
+    case "email":
+      return innerLink.email ? `mailto:${innerLink.email}` : null;
+    case "phone":
+      return innerLink.phone ? `tel:${innerLink.phone}` : null;
+    case "anchor":
+      return innerLink.anchor ? `#${innerLink.anchor}` : null;
+    case "page_top":
+      return "#top";
+    case "page_bottom":
+      return "#bottom";
+    default:
+      return null;
+  }
+}
 
 function getBorderStyle(border?: BorderConfig): CSSProperties {
   if (!border) return {};
@@ -98,7 +126,11 @@ function getBorderStyleString(border?: BorderConfig): string {
 }
 
 function Image({ config, devNode, devMode }: ImageProps) {
-  const { src, alt, href, target, mobile } = config;
+  const { src, alt, innerLink, mobile } = config;
+
+  // Resolve href and target from innerLink
+  const href = buildLinkHref(innerLink);
+  const target = innerLink?.target || "_blank";
 
   const seed = src + (alt || "");
   const instanceId = seed
@@ -134,32 +166,59 @@ function Image({ config, devNode, devMode }: ImageProps) {
 
   const imgWidthAttr = isPercent ? (maxWidthPx ?? undefined) : widthAttr;
 
-  // 2. Mobile Overrides (Every property used)
+  // 2. Mobile Overrides — only emit CSS properties that are explicitly set,
+  // so unspecified properties are left untouched (no forced defaults).
   let mobileCss = "";
   if (mobile) {
+    // .wrap-${imgClass} rules
+    const wrapRules: string[] = [
+      // Always reset min-width so the px lock from desktop can be overridden
+      "min-width: 0 !important;",
+    ];
+    if (mobile.width !== undefined)
+      wrapRules.push(`width: ${mobile.width} !important;`);
+    if (mobile.maxWidth !== undefined)
+      wrapRules.push(`max-width: ${mobile.maxWidth} !important;`);
+
+    // .td-${imgClass} rules
+    const tdRules: string[] = [];
+    if (mobile.padding !== undefined)
+      tdRules.push(`padding: ${mobile.padding} !important;`);
+    if (mobile.backgroundColor !== undefined)
+      tdRules.push(`background-color: ${mobile.backgroundColor} !important;`);
+
+    // .${imgClass} rules
+    const imgRules: string[] = [];
+    if (mobile.width !== undefined)
+      imgRules.push(`width: ${mobile.width} !important;`);
+    if (mobile.height !== undefined)
+      imgRules.push(`height: ${mobile.height} !important;`);
+    if (mobile.maxWidth !== undefined)
+      imgRules.push(`max-width: ${mobile.maxWidth} !important;`);
+    if (mobile.maxHeight !== undefined)
+      imgRules.push(`max-height: ${mobile.maxHeight} !important;`);
+    if (mobile.borderRadius !== undefined)
+      imgRules.push(`border-radius: ${mobile.borderRadius} !important;`);
+    if (mobile.hidden !== undefined)
+      imgRules.push(`display: ${mobile.hidden ? "none" : "block"} !important;`);
+    if (mobile.objectFit !== undefined)
+      imgRules.push(`object-fit: ${mobile.objectFit} !important;`);
+    if (mobile.objectPosition !== undefined)
+      imgRules.push(`object-position: ${mobile.objectPosition} !important;`);
+    if (mobile.border !== undefined)
+      imgRules.push(getBorderStyleString(mobile.border));
+
     mobileCss = `
       @media screen and (max-width: 768px) {
         .wrap-${imgClass} {
           /* This breaks the px lock from desktop and makes it fluid */
-          width: ${mobile.width || "100%"} !important;
-          max-width: ${mobile.maxWidth || "100%"} !important;
-          min-width: 0 !important;
+          ${wrapRules.join("\n          ")}
         }
         .td-${imgClass} {
-          padding: ${mobile.padding || "0"} !important;
-          background-color: ${mobile.backgroundColor || "transparent"} !important;
-          width: 100% !important;
+          ${tdRules.join("\n          ")}
         }
         .${imgClass} {
-          width: ${mobile.width || "100%"} !important;
-          height: ${mobile.height || "auto"} !important;
-          max-width: ${mobile.maxWidth || "100%"} !important;
-          max-height: ${mobile.maxHeight || "none"} !important;
-          border-radius: ${mobile.borderRadius || "0"} !important;
-          display: ${mobile.hidden ? "none" : "block"} !important;
-          object-fit: ${mobile.objectFit || "fill"} !important;
-          object-position: ${mobile.objectPosition || "center"} !important;
-          ${getBorderStyleString(mobile.border)}
+          ${imgRules.join("\n          ")}
         }
       }
     `;
@@ -187,6 +246,7 @@ function Image({ config, devNode, devMode }: ImageProps) {
       height={heightAttr !== "auto" ? heightAttr : undefined}
       className={imgClass}
       style={imgStyle}
+      draggable={!devMode}
     />
   );
 
@@ -224,6 +284,9 @@ function Image({ config, devNode, devMode }: ImageProps) {
                 <a
                   href={href}
                   target={target}
+                  {...(target === "_blank"
+                    ? { rel: "noopener noreferrer" }
+                    : {})}
                   style={{ display: "block", width: "100%" }}
                 >
                   {imageElement}

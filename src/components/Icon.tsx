@@ -176,7 +176,7 @@ function buildIconifyUrl(config: IconConfig): string | null {
     "https://iconify.pagenflow.com/api/image/{{height}}/{{color}}/{{rotate}}-{{rotate-orientation}}/{{icon-full-name}}.png";
 
   return template
-    .replace("{{height}}", String(numericHeight * 2))
+    .replace("{{height}}", String(numericHeight * 4))
     .replace("{{color}}", cleanColor)
     .replace("{{rotate}}", String(rotate))
     .replace("{{rotate-orientation}}", rotateOrientation)
@@ -221,7 +221,7 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
   // Determine icon source
   const iconSrc = buildIconifyUrl(config);
   const href = buildLinkHref(innerLink);
-  const target = innerLink?.target || "_self";
+  const target = innerLink?.target || "_blank";
   const align = justifyMap[justifyContent];
 
   // Get border styles

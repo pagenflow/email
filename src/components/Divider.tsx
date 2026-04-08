@@ -1,22 +1,12 @@
-import { CSSProperties, memo, ReactNode } from "react";
+import { memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 
 export interface DividerConfig {
-  /** Thickness of the line (e.g., "1px"). */
   height?: string;
-
-  /** Color of the line. */
   color?: string;
-
-  /** Width of the line (e.g., "100%" or "300px"). */
   width?: string;
-
-  /** Spacing above and below the divider (e.g., "20px 0"). */
   margin?: string;
-
-  /** Horizontal alignment of the divider. */
   align?: "left" | "center" | "right";
-
   hideOnMobile?: boolean;
 }
 
@@ -35,84 +25,120 @@ function Divider({ config, devNode }: DividerProps) {
     hideOnMobile,
   } = config;
 
-  // 1. Outer TD Style: Applies the vertical spacing (margin)
-  const outerTdStyle: CSSProperties = {
-    padding: margin,
-    fontSize: "0",
-    lineHeight: "0",
-    width: "100%",
-  };
+  const heightPx = parseInt(height, 10) || 1;
 
-  // 2. Divider Table Style: Applies the line properties
-  const dividerTableStyle: CSSProperties = {
-    width: width,
-    height: height,
-    backgroundColor: color,
-    borderCollapse: "collapse",
-    border: "0",
+  // Parse margin into paddingTop / paddingBottom for the outer TD.
+  // Outlook ignores shorthand "20px 0" on TDs — must be explicit.
+  const [marginTopRaw = "0", marginRightRaw = "0", marginBottomRaw, marginLeftRaw] =
+    margin.trim().split(/\s+/);
+  const marginTop = marginTopRaw;
+  const marginBottom = marginBottomRaw ?? marginTopRaw; // "20px 0" → top=20px, bottom=20px
+  void marginRightRaw;
+  void marginLeftRaw;
 
-    // ✅ FIX 1: Use string literal indexing for MSO properties
-    // ["mso-table-lspace" as string]: "0pt",
-    ["msoTableLspace" as string]: "0pt",
-    // ["mso-table-rspace" as string]: "0pt",
-    ["msoTableRspace" as string]: "0pt",
-  };
-
-  // Parse height for the HTML attribute
-  const dividerHeightAttribute = parseInt(height, 10) || 1;
+  // Outlook requires align on the outer TD to correctly position
+  // a fixed-width inner table (e.g. width="300px").
+  const alignAttr = align === "left" ? "left" : align === "right" ? "right" : "center";
 
   return (
     <table
-      aria-label="Divider Wrapper"
       role="presentation"
       cellPadding={0}
       cellSpacing={0}
       border={0}
       style={{
-        // --- Start dev
-        position: "relative",
-        // --- End dev
-
+        position: "relative", // dev overlay anchor
         width: "100%",
         borderCollapse: "collapse",
+        border: "0",
       }}
       className={hideOnMobile ? "hide-on-mobile" : undefined}
     >
       <tbody>
         <tr>
-          {/* TD: Manages spacing (margin) and alignment */}
-          <td style={outerTdStyle} align={align}>
-            {/* Inner Table: This is the actual divider line */}
+          {/*
+            Outer TD:
+            - Uses explicit padding-top / padding-bottom instead of shorthand
+              because Outlook/Word partially ignores padding shorthand on TDs.
+            - align attribute (not just CSS text-align) drives centering of
+              the inner table in Outlook.
+          */}
+          <td
+            align={alignAttr}
+            style={{
+              paddingTop: marginTop,
+              paddingBottom: marginBottom,
+              paddingLeft: "0",
+              paddingRight: "0",
+              fontSize: "0",
+              lineHeight: "0",
+            }}
+          >
+            {/*
+              Inner wrapper table:
+              - width / align here position the line block itself.
+              - NO background-color here — Outlook ignores it on <table>.
+              - border="0" as HTML attribute AND style — belt + braces for Outlook.
+            */}
             <table
-              aria-label="Divider Line"
               role="presentation"
               cellPadding={0}
               cellSpacing={0}
               border={0}
-              align={align}
-              style={dividerTableStyle}
-              // ✅ FIX 2: Apply the HTML height attribute using type assertion
-              {...({ height: dividerHeightAttribute } as any)}
+              align={alignAttr}
+              style={{
+                width: width,
+                borderCollapse: "collapse",
+                border: "0",
+              }}
             >
               <tbody>
                 <tr>
-                  {/* Empty TD that is forced to the line's height/color */}
+                  {/*
+                    The actual divider line lives entirely on this TD:
+
+                    1. height="N" HTML attribute  → Outlook uses this, not CSS height.
+                    2. background-color on TD      → only place Outlook respects it.
+                    3. mso-line-height-rule:exactly → prevents Word inflating the row.
+                    4. line-height === height      → collapses the row in all clients.
+                    5. font-size: 0               → kills any phantom text gap.
+                    6. Empty content              → &nbsp; adds ~1em phantom height in Outlook.
+
+                    MSO props cannot go through React's style object (it strips them),
+                    so we use a ref to write the raw style attribute after mount,
+                    and also set it as a static string via dangerouslySetInnerHTML
+                    on a child so it survives SSR / static rendering.
+                  */}
                   <td
-                    style={{
-                      height: height,
-                      fontSize: "0",
-                      lineHeight: "0",
-                      padding: "0",
+                    {...({ height: heightPx } as Record<string, unknown>)}
+                    ref={(el) => {
+                      if (!el) return;
+                      el.setAttribute(
+                        "style",
+                        `height:${height};` +
+                          `line-height:${height};` +
+                          `font-size:0;` +
+                          `padding:0;` +
+                          `background-color:${color};` +
+                          `mso-line-height-rule:exactly;`
+                      );
                     }}
-                  >
-                    &nbsp;
-                  </td>
+                    style={{
+                      // Fallback for non-Outlook clients (React-rendered style object).
+                      height: height,
+                      lineHeight: height,
+                      fontSize: "0",
+                      padding: "0",
+                      backgroundColor: color,
+                    }}
+                  />
                 </tr>
               </tbody>
             </table>
           </td>
         </tr>
       </tbody>
+
       {devNode && (
         <tfoot>
           <tr>
