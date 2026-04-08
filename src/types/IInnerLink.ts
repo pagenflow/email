@@ -1,3 +1,15 @@
+export type CalendarProvider = "google" | "outlook" | "office365" | "yahoo" | "ics";
+
+export interface ICalendarLink {
+    calendarProvider?: CalendarProvider;
+    calendarTitle?: string;
+    calendarStart?: string;       // ISO string, UTC recommended
+    calendarEnd?: string;         // ISO string
+    calendarAllDay?: boolean;
+    calendarDescription?: string;
+    calendarLocation?: string;
+}
+
 export type InnerLinkType =
     | "none"
     | "anchor"
@@ -14,4 +26,13 @@ export default interface IInnerLink {
     url?: string;
     anchor?: string;
     target?: "_blank" | "_self" | "_parent" | "_top";
+
+    // calendar
+    calendarProvider?: CalendarProvider;
+    calendarTitle?: string;
+    calendarStart?: string;
+    calendarEnd?: string;
+    calendarAllDay?: boolean;
+    calendarDescription?: string;
+    calendarLocation?: string;
 }
