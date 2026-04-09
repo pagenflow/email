@@ -18,7 +18,7 @@ export type SectionConfig = {
 
 export interface SectionProps {
   config: SectionConfig;
-  children: ReactNode;
+  children?: ReactNode;
   devNode?: ReactNode;
 }
 

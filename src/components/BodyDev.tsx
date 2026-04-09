@@ -28,7 +28,7 @@ export default function BodyDev({ children, config = {} }: BodyDevProps) {
     lineHeight: globalLineHeight,
     padding: "0",
     margin: "0",
-    fontFamily: "Arial, Helvetica, sans-serif",
+    fontFamily: config.fontFamily ?? "Arial, Helvetica, sans-serif",
     overflowX: "hidden",
 
     // Background image support (if provided)
@@ -39,28 +39,6 @@ export default function BodyDev({ children, config = {} }: BodyDevProps) {
       backgroundPosition: bgPosition,
     }),
   };
-
-  //   // Center wrapper style
-  //   const centerStyle: CSSProperties = {
-  //     width: '100%',
-  //     minHeight: '100vh',
-  //     display: 'flex',
-  //     justifyContent: 'center',
-  //     alignItems: 'flex-start',
-  //     background: globalBackgroundColor,
-  //     ...(bgImage && {
-  //       backgroundImage: `url(${bgImage})`,
-  //       backgroundRepeat: bgRepeat,
-  //       backgroundSize: bgSize,
-  //       backgroundPosition: bgPosition,
-  //     }),
-  //   };
-
-  //   // Table wrapper style
-  //   const tableWrapperStyle: CSSProperties = {
-  //     width: '100%',
-  //     maxWidth: '100%',
-  //   };
 
   return (
     <div

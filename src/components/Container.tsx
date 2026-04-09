@@ -47,7 +47,7 @@ export interface ContainerConfig {
 
 export type ContainerProps = {
   config: ContainerConfig;
-  children: ReactNode;
+  children?: ReactNode;
   devMode?: boolean;
   devNode?: ReactNode;
 };

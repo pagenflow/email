@@ -64,7 +64,7 @@ export interface RowConfig {
 }
 
 export type RowProps = {
-  children: ReactNode;
+  children?: ReactNode;
   config: RowConfig;
   devNode?: ReactNode;
   devMode?: boolean;

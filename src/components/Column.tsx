@@ -32,7 +32,7 @@ export type ColumnConfig = {
 };
 
 export type ColumnProps = {
-  children: ReactNode;
+  children?: ReactNode;
   config: ColumnConfig;
   devNode?: ReactNode;
 };

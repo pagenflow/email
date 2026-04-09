@@ -77,6 +77,10 @@ export default function HeadDev({
         cursor: default;
       }
 
+      .builder-canvas .ql-align-center {
+        text-align: inherit !important;
+      }
+
       /* Responsive container styles - Using container query */
       @container builder-canvas (max-width: 768px) {
         .container-fixed-width {

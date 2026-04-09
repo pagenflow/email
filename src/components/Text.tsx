@@ -27,7 +27,7 @@ export interface TextConfig {
   fontStyle?: string;
 
   /** Line height (e.g., '1.5' or '24px'). */
-  lineHeight?: string;
+  lineHeight?: string | number;
 
   /** Letter spacing (e.g., '0.5px', '1px'). */
   letterSpacing?: string;
@@ -56,6 +56,7 @@ export interface TextConfig {
   /** Word break behavior (e.g., 'break-all', 'break-word', 'keep-all', 'normal'). */
   wordBreak?: string;
   maxWidth?: string;
+  listStyle?: string;
 }
 
 export type TextProps = {
@@ -84,7 +85,7 @@ function Text({ config, devMode, children }: TextProps) {
     opacity,
     whiteSpace,
     wordBreak = "break-all",
-    maxWidth
+    maxWidth,
   } = config;
 
   // 1. TD Style: Where padding and background are reliably applied.
@@ -114,7 +115,7 @@ function Text({ config, devMode, children }: TextProps) {
     wordBreak: wordBreak as any,
     margin: "0",
     padding: "0",
-    maxWidth
+    maxWidth,
   };
 
   // Determine content to render

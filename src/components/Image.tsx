@@ -39,6 +39,14 @@ export interface ImageConfig {
   borderRadius?: string;
   border?: BorderConfig;
   innerLink?: IInnerLink;
+  /**
+   * @deprecated Use innerLink property instead
+   */
+  href?: string;
+  /**
+   * @deprecated Use innerLink property instead
+   */
+  target?: string;
   objectFit?: CSSProperties["objectFit"];
   objectPosition?: string;
   mobile?: ImageMobileConfig;

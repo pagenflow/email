@@ -10,6 +10,11 @@ export interface ButtonConfig {
   /** Link configuration for the button destination. Required. */
   innerLink?: IInnerLink;
 
+  /**
+   * @deprecated Use innerLink property instead
+   */
+  href?: string;
+
   /** Button text. */
   children: ReactNode;
 
@@ -227,7 +232,9 @@ function Button({ config, devMode }: ButtonProps) {
 
   if (!useSimpleOutlookApproach) {
     // VML needs fixed pixel height. We estimate it based on padding and potential wrapping.
-    const numericPadding = padding ? parseInt(padding.split(" ")[0] || "12", 10) : 12;
+    const numericPadding = padding
+      ? parseInt(padding.split(" ")[0] || "12", 10)
+      : 12;
     const numericFontSize = fontSize ? parseInt(fontSize, 10) : 0;
     const numericLineHeight = lineHeight
       ? lineHeight.includes("px")
@@ -290,8 +297,7 @@ function Button({ config, devMode }: ButtonProps) {
       textDecoration && textDecoration !== "none"
         ? `text-decoration:${textDecoration};`
         : "";
-    const vmlWhiteSpace =
-      whiteSpace ? `white-space:${whiteSpace};` : "";
+    const vmlWhiteSpace = whiteSpace ? `white-space:${whiteSpace};` : "";
     const vmlDirection = direction ? `direction:${direction};` : "";
     const vmlOpacity = opacity !== undefined ? `opacity:${opacity};` : "";
 
