@@ -9,16 +9,16 @@ export interface BodyDevProps {
 
 export default function BodyDev({ children, config = {} }: BodyDevProps) {
   // Extract config values with fallbacks
-  const globalColor = config.color || "#000000";
-  const globalFontSize = config.fontSize || "16px";
-  const globalBackgroundColor = config.backgroundColor || "#ffffff";
-  const globalLineHeight = config.lineHeight || "1.4";
+  const globalColor = config.color || "";
+  const globalFontSize = config.fontSize || "";
+  const globalBackgroundColor = config.backgroundColor || "";
+  const globalLineHeight = config.lineHeight || "";
 
   // Background image properties
   const bgImage = config.backgroundImage?.src || "";
-  const bgRepeat = config.backgroundImage?.repeat || "no-repeat";
-  const bgSize = config.backgroundImage?.size || "cover";
-  const bgPosition = config.backgroundImage?.position || "center";
+  const bgRepeat = config.backgroundImage?.repeat || "";
+  const bgSize = config.backgroundImage?.size || "";
+  const bgPosition = config.backgroundImage?.position || "";
 
   // Main container style (simulates body behavior in dev mode)
   const bodyDevStyle: CSSProperties = {
@@ -28,7 +28,7 @@ export default function BodyDev({ children, config = {} }: BodyDevProps) {
     lineHeight: globalLineHeight,
     padding: "0",
     margin: "0",
-    fontFamily: config.fontFamily ?? "Arial, Helvetica, sans-serif",
+    fontFamily: config.fontFamily,
     overflowX: "hidden",
 
     // Background image support (if provided)

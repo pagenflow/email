@@ -22,17 +22,17 @@ export interface BodyProps {
 
 export default function Body({ children, config = {} }: BodyProps) {
   // Extract config values with fallbacks
-  const globalColor = config.color || "#000000";
-  const globalFontSize = config.fontSize || "16px";
-  const globalBackgroundColor = config.backgroundColor || "#ffffff";
-  const globalLineHeight = config.lineHeight || "1.4";
-  const globalFontFamily = config.fontFamily || "Arial, Helvetica, sans-serif";
+  const globalColor = config.color || "";
+  const globalFontSize = config.fontSize || "";
+  const globalBackgroundColor = config.backgroundColor || "";
+  const globalLineHeight = config.lineHeight || "";
+  const globalFontFamily = config.fontFamily || "";
 
   // Background image properties
   const bgImage = config.backgroundImage?.src || "";
-  const bgRepeat = config.backgroundImage?.repeat || "no-repeat";
-  const bgSize = config.backgroundImage?.size || "cover";
-  const bgPosition = config.backgroundImage?.position || "center";
+  const bgRepeat = config.backgroundImage?.repeat || "";
+  const bgSize = config.backgroundImage?.size || "";
+  const bgPosition = config.backgroundImage?.position || "";
 
   // 1. Style for the <body> tag inline
   const bodyStyle: CSSProperties = {

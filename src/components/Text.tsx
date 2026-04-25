@@ -1,5 +1,6 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
+import injectLinkStyles from "./utils/injectLinkStyles";
 
 export interface TextConfig {
   /** The text content or React nodes to render. */
@@ -100,7 +101,7 @@ function Text({ config, devMode, children }: TextProps) {
   const contentStyle: CSSProperties = {
     color: color,
     textAlign: textAlign,
-    fontFamily: fontFamily || "Arial, Helvetica, sans-serif",
+    fontFamily: fontFamily,
     fontSize: fontSize,
     fontWeight: fontWeight,
     fontStyle: fontStyle,
@@ -122,6 +123,10 @@ function Text({ config, devMode, children }: TextProps) {
   const content = text ?? children;
   const isString = typeof content === "string";
 
+  const processedHtml = isString
+    ? injectLinkStyles(content, contentStyle as Record<string, string>)
+    : "";
+
   return (
     <table
       aria-label="Text Block Wrapper"
@@ -140,7 +145,7 @@ function Text({ config, devMode, children }: TextProps) {
             {isString ? (
               <div
                 style={contentStyle}
-                dangerouslySetInnerHTML={{ __html: content }}
+                dangerouslySetInnerHTML={{ __html: processedHtml }}
               />
             ) : (
               <div style={contentStyle}>{content}</div>

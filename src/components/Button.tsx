@@ -219,156 +219,39 @@ function Button({ config, devMode }: ButtonProps) {
   // Border styles
   const borderStyleString = getBorderStyleString(border);
 
-  // --- Determine Button Approach Based on Width ---
-
-  // Check if width is percentage-based or not defined
-  const isPercentageWidth = !width || width.includes("%");
-  const useSimpleOutlookApproach = isPercentageWidth;
-
   const align = justifyContent ? justifyMap[justifyContent] : undefined;
-
-  // --- VML Calculation and Code for Outlook Compatibility (Fixed Width Only) ---
-  let vmlButton = "";
-
-  if (!useSimpleOutlookApproach) {
-    // VML needs fixed pixel height. We estimate it based on padding and potential wrapping.
-    const numericPadding = padding
-      ? parseInt(padding.split(" ")[0] || "12", 10)
-      : 12;
-    const numericFontSize = fontSize ? parseInt(fontSize, 10) : 0;
-    const numericLineHeight = lineHeight
-      ? lineHeight.includes("px")
-        ? parseInt(lineHeight, 10)
-        : numericFontSize * parseFloat(lineHeight)
-      : numericFontSize;
-
-    // Trust user's explicit pixel width - no calculation needed
-    const vmlWidth = parseInt(width, 10);
-
-    // Calculate VML height - trust user's padding and let text wrap naturally
-    // VML v:textbox will handle text wrapping automatically
-    const textContent = typeof children === "string" ? children : "";
-
-    // Estimate number of lines based on text length and button width
-    const horizontalPadding = padding?.split(" ")[1]
-      ? parseInt(padding.split(" ")[1], 10) * 2
-      : numericPadding * 2;
-
-    const availableTextWidth = vmlWidth - horizontalPadding;
-    const charWidthMultiplier =
-      fontWeight && parseInt(fontWeight) >= 500 ? 0.7 : 0.6;
-    const avgCharWidth = numericFontSize * charWidthMultiplier;
-    const charsPerLine = Math.max(
-      Math.floor(availableTextWidth / avgCharWidth),
-      1,
-    );
-    const numberOfLines = Math.max(
-      Math.ceil(textContent.length / charsPerLine),
-      1,
-    );
-
-    // Calculate height: vertical padding + (lines * line height) + extra buffer for VML
-    const textHeight = numberOfLines * numericLineHeight;
-    // Add extra 4px buffer to prevent bottom cropping in VML
-    const vmlHeight = Math.max(numericPadding * 2 + textHeight + 4, 40);
-
-    // VML colors must use the full hex format (e.g., #000000)
-    const vmlFillColor = backgroundColor
-      ? backgroundColor.startsWith("#")
-        ? backgroundColor
-        : `#${backgroundColor}`
-      : undefined;
-
-    // VML stroke color for border
-    const vmlStrokeColor = border?.color || vmlFillColor;
-    const vmlStrokeWeight = border?.width ? parseInt(border.width, 10) : 0;
-    const hasVmlStroke = vmlStrokeWeight > 0;
-
-    // Build VML font styles - consistent with other rendering paths
-    const vmlFontWeight = fontWeight;
-    const vmlFontStyle = fontStyle === "italic" ? "font-style:italic;" : "";
-    const vmlLetterSpacing = letterSpacing
-      ? `letter-spacing:${letterSpacing};`
-      : "";
-    const vmlTextTransform = textTransform
-      ? `text-transform:${textTransform};`
-      : "";
-    const vmlTextDecoration =
-      textDecoration && textDecoration !== "none"
-        ? `text-decoration:${textDecoration};`
-        : "";
-    const vmlWhiteSpace = whiteSpace ? `white-space:${whiteSpace};` : "";
-    const vmlDirection = direction ? `direction:${direction};` : "";
-    const vmlOpacity = opacity !== undefined ? `opacity:${opacity};` : "";
-
-    // VML code uses MSO conditional comments to render only in Outlook
-    // Use table with explicit MSO height for vertical centering
-    const horizontalPaddingValue = padding?.split(" ")[1]
-      ? parseInt(padding.split(" ")[1], 10)
-      : numericPadding;
-
-    // For VML, we need to use a table inside to properly apply padding and centering
-    let vmlAlignAttr = "";
-    let vmlAlignStyle = "";
-    if (textAlign === "center") {
-      vmlAlignAttr = 'align="center"';
-    } else if (textAlign) {
-      vmlAlignStyle = `text-align:${textAlign};`;
-    }
-
-    // Border radius is intentionally omitted (arcsize="0%") for Outlook Classic.
-    // Outlook Classic does not reliably support rounded corners and the result
-    // is inconsistent, so we render sharp corners there instead.
-    vmlButton = `
-    <!--[if mso]>
-    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" ${href ? `href="${href}"` : ""} style="height:${vmlHeight}px;width:${vmlWidth}px;" arcsize="0%" ${vmlStrokeColor ? `strokecolor="${vmlStrokeColor}"` : ""} ${hasVmlStroke ? `strokeweight="${vmlStrokeWeight}px"` : 'stroke="f"'} ${vmlFillColor ? `fillcolor="${vmlFillColor}"` : ""}>
-      <w:anchorlock/>
-      <v:textbox inset="${horizontalPaddingValue}px,${numericPadding}px,${horizontalPaddingValue}px,${numericPadding}px">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-          <tr>
-            <td ${vmlAlignAttr} valign="middle" style="${vmlAlignStyle}${color ? `color:${color};` : ""}${safeFontFamily ? `font-family:${safeFontFamily};` : ""}${fontSize ? `font-size:${fontSize};` : ""}${vmlFontWeight ? `font-weight:${vmlFontWeight};` : ""}${vmlFontStyle}${vmlLetterSpacing}${vmlTextTransform}${vmlTextDecoration}${vmlWhiteSpace}${vmlDirection}${vmlOpacity}${lineHeight ? `line-height:${lineHeight};` : ""}mso-line-height-rule:exactly;">
-              ${typeof children === "string" ? children : ""}
-            </td>
-          </tr>
-        </table>
-      </v:textbox>
-    </v:roundrect>
-    <![endif]-->
-  `;
-  }
 
   // --- Simple Outlook Approach for Percentage Widths ---
   let simpleOutlookButton = "";
 
-  if (useSimpleOutlookApproach) {
-    // Build consistent inline styles for text properties
-    const textDecorationStyle =
-      textDecoration && textDecoration !== "none"
-        ? `text-decoration: ${textDecoration};`
-        : "";
-    const fontStyleProp = fontStyle ? `font-style: ${fontStyle};` : "";
-    const letterSpacingProp = letterSpacing
-      ? `letter-spacing: ${letterSpacing};`
+  // Build consistent inline styles for text properties
+  const textDecorationStyle =
+    textDecoration && textDecoration !== "none"
+      ? `text-decoration: ${textDecoration};`
       : "";
-    const textTransformProp = textTransform
-      ? `text-transform: ${textTransform};`
-      : "";
-    const whiteSpaceProp = whiteSpace ? `white-space: ${whiteSpace};` : "";
-    const directionProp = direction ? `direction: ${direction};` : "";
-    const opacityProp = opacity !== undefined ? `opacity: ${opacity};` : "";
-    const wordBreakProp = wordBreak ? `word-break: ${wordBreak};` : "";
+  const fontStyleProp = fontStyle ? `font-style: ${fontStyle};` : "";
+  const letterSpacingProp = letterSpacing
+    ? `letter-spacing: ${letterSpacing};`
+    : "";
+  const textTransformProp = textTransform
+    ? `text-transform: ${textTransform};`
+    : "";
+  const whiteSpaceProp = whiteSpace ? `white-space: ${whiteSpace};` : "";
+  const directionProp = direction ? `direction: ${direction};` : "";
+  const opacityProp = opacity !== undefined ? `opacity: ${opacity};` : "";
+  const wordBreakProp = wordBreak ? `word-break: ${wordBreak};` : "";
 
-    // Border radius is intentionally omitted from the Outlook Classic table cell.
-    // Outlook Classic ignores border-radius on table cells anyway, and including it
-    // can cause unexpected rendering artifacts, so we explicitly leave it out.
-    simpleOutlookButton = `
+  // Border radius is intentionally omitted from the Outlook Classic table cell.
+  // Outlook Classic ignores border-radius on table cells anyway, and including it
+  // can cause unexpected rendering artifacts, so we explicitly leave it out.
+  simpleOutlookButton = `
     <!--[if mso]>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse: collapse;">
       <tr>
         <td ${align ? `align="${align}"` : ""} style="padding: 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="${width || "auto"}" style="border-collapse: collapse;">
             <tr>
-              <td ${backgroundColor ? `bgcolor="${backgroundColor}"` : ""} ${textAlign ? `align="${textAlign}"` : ""} style="${padding ? `padding: ${padding};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${borderStyleString}">
+              <td ${backgroundColor ? `bgcolor="${backgroundColor}"` : ""} ${textAlign ? `align="${textAlign}"` : ""} style="${padding ? `padding: ${padding};` : ""} ${href ? "cursor: pointer;" : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${borderStyleString}">
                 ${
                   href
                     ? `<a href="${href}" target="${target}" rel="noopener noreferrer" style="${color ? `color: ${color};` : ""} ${textDecorationStyle} display: block; ${safeFontFamily ? `font-family: ${safeFontFamily};` : ""} ${fontSize ? `font-size: ${fontSize};` : ""} ${fontWeight ? `font-weight: ${fontWeight};` : ""} ${fontStyleProp} ${lineHeight ? `line-height: ${lineHeight};` : ""} ${letterSpacingProp} ${textTransformProp} ${textAlign ? `text-align: ${textAlign};` : ""} ${whiteSpaceProp} ${directionProp} ${opacityProp} ${wordBreakProp} mso-line-height-rule: exactly;">
@@ -386,7 +269,6 @@ function Button({ config, devMode }: ButtonProps) {
     </table>
     <![endif]-->
   `;
-  }
 
   // Build shared inline style fragments for the non-MSO path.
   // fontFamily uses the sanitized value so embedded quotes never break the
@@ -462,7 +344,7 @@ function Button({ config, devMode }: ButtonProps) {
                   <td
                     dangerouslySetInnerHTML={{
                       __html: `
-      ${useSimpleOutlookApproach ? simpleOutlookButton : vmlButton}
+      ${simpleOutlookButton}
       <!--[if !mso]><!-->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse; width: 100%;">
         <tbody>
@@ -478,7 +360,7 @@ function Button({ config, devMode }: ButtonProps) {
                               ${typeof children === "string" ? children : ""}
                             </span>`
                           : href
-                            ? `<a href="${href}" target="${target}" rel="noopener noreferrer" style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; ${wordBreak ? `word-break: ${wordBreak};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${padding ? `padding: ${padding};` : ""}">
+                            ? `<a href="${href}" target="${target}" rel="noopener noreferrer" style="${sharedTextStyles} ${textDecoration && textDecoration !== "none" ? "" : "text-decoration: none;"} display: block; cursor: pointer; ${wordBreak ? `word-break: ${wordBreak};` : ""} ${textAlign ? `text-align: ${textAlign};` : ""} ${padding ? `padding: ${padding};` : ""}">
                                 <span>
                                   ${typeof children === "string" ? children : ""}
                                 </span>
