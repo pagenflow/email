@@ -6,3 +6,4 @@ tsconfig.json
 rollup.config.mjs
 *.test.ts
 *.test.tsx
+.vscode
