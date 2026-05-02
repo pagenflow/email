@@ -1,5 +1,4 @@
 import { CSSProperties, Fragment, memo, ReactNode } from "react";
-import { arePropsEqual } from "../utils/memoUtils";
 import {
   AlignItems,
   BorderConfig,
@@ -8,6 +7,7 @@ import {
   TdValign,
 } from "../types";
 import IInnerLink from "../types/IInnerLink";
+import { arePropsEqual } from "../utils/memoUtils";
 
 const justifyMap: Record<JustifyContent, TdAlign> = {
   start: "left",
@@ -140,6 +140,12 @@ function Row({ children, config, devNode, devMode }: RowProps) {
 
   const href = getHrefFromInnerLink(config.innerLink);
   const target = config.innerLink?.target || "_blank";
+
+  // Whether children should stack on mobile.
+  // Mirrors Container's isStacking pattern: drives stack-td / desktop-gap-column
+  // / mobile-gap-spacer class names so that stacking works via non-@media CSS
+  // rules that survive Gmail's stylesheet stripping.
+  const isStacking = config.mobile?.wrap === true && numChildren > 1;
 
   // 1. Outer TD: Background, Border Radius, Width, Height.
   const backgroundTdStyle: React.CSSProperties = {
@@ -274,10 +280,6 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                               style={contentTableStyle}
                               {...(config.height && { height: config.height })}
                               className="content-table row-content-table"
-                              data-mobile-justify={
-                                config.mobile?.justifyContent
-                              }
-                              data-mobile-align={config.mobile?.alignItems}
                               data-mobile-wrap={
                                 config.mobile?.wrap ? "true" : undefined
                               }
@@ -288,16 +290,44 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                                   {childrenArray.map((child, index) => (
                                     <Fragment key={`row-child-${index}`}>
                                       <td
-                                        valign={tdValign}
+                                        align={tdAlign}
                                         style={{
                                           verticalAlign: tdValign,
-                                          textAlign: "left",
+                                          textAlign: tdAlign,
                                           padding: "0",
                                           margin: "0",
                                         }}
-                                        className="child-cell"
+                                        // Mirror of Container's stack-td pattern: when isStacking,
+                                        // the non-@media .stack-td rule forces display:block +
+                                        // width:100% on each child, which survives Gmail's
+                                        // @media stripping and achieves true mobile stacking.
+                                        className={`child-cell${isStacking ? " stack-td" : ""}`}
                                       >
                                         {child}
+
+                                        {/*
+                                         * Mirror of Container's mobile-gap-spacer pattern:
+                                         * Gap is injected structurally inside each child (not
+                                         * between columns) so it survives Gmail. display:none
+                                         * keeps it hidden on desktop via the non-@media
+                                         * .mobile-gap-spacer rule already defined in Head.tsx.
+                                         * Only rendered between children (not after the last).
+                                         */}
+                                        {isStacking &&
+                                          index < numChildren - 1 &&
+                                          config.gap && (
+                                            <div
+                                              className="mobile-gap-spacer"
+                                              style={{
+                                                display: "none",
+                                                fontSize: "0",
+                                                lineHeight: "0",
+                                                height: config.gap,
+                                              }}
+                                            >
+                                              &nbsp;
+                                            </div>
+                                          )}
                                       </td>
 
                                       {/* Gap between children, not after last */}
@@ -307,7 +337,11 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                                             key={`row-gap-${index}`}
                                             width={config.gap}
                                             style={gapTdStyle}
-                                            className="row-gap-td"
+                                            // Mirror of Container's desktop-gap-column pattern:
+                                            // when isStacking, the non-@media .desktop-gap-column
+                                            // rule collapses the between-column gap td so it does
+                                            // not create phantom space while children are stacked.
+                                            className={`row-gap-td${isStacking ? " desktop-gap-column" : ""}`}
                                           >
                                             &nbsp;
                                           </td>

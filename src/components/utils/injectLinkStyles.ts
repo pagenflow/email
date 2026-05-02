@@ -23,8 +23,9 @@ function resolveAnchorStyles(anchor: DomNode, fallback?: Record<string, string>)
             resolved[prop] = inherited;
         } else if (fallback?.[prop]) {
             resolved[prop] = fallback[prop];
+        } else if (prop === "text-decoration") {
+            resolved[prop] = "none";
         }
-        // if neither — leave it out entirely, don't force inherit
     }
 
     return Object.entries(resolved)

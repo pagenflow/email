@@ -26,6 +26,14 @@ export type ColumnConfig = {
   // Width/Dimension
   width?: string;
   height?: string;
+  // maxWidth constrains the column in modern clients via CSS, and in
+  // Outlook Classic (Word rendering engine) via a wrapping center+table
+  // pattern: a <center> tag auto-centers the inner table, and the `width`
+  // HTML attribute on that table acts as a hard cap that the Word engine
+  // respects. The outer column itself keeps width: 100% so it fills its
+  // parent in all clients, and the inner table limits the rendered content
+  // width without any layout breakage in retro clients.
+  maxWidth?: string;
 
   // NEW: Gap property for spacing between children
   gap?: string;
@@ -118,6 +126,9 @@ function Column({ children, config, devNode }: ColumnProps) {
 
   // 2. Outer TD style: Background and Border Radius (no border here).
   //    height is set so the TD occupies the full declared height.
+  //    When maxWidth is set, the outer TD stays at its normal width so it
+  //    always fills its parent — the inner maxWidth table (see below) does
+  //    the actual capping.
   const outerTdStyle: React.CSSProperties = {
     width: config.width,
     height: config.height,
@@ -165,6 +176,19 @@ function Column({ children, config, devNode }: ColumnProps) {
     lineHeight: "1px",
     fontSize: "1px",
     width: "100%",
+  };
+
+  // 5. maxWidth constraining table style (modern clients).
+  //    The `width` HTML attribute on this table is what Outlook Classic
+  //    (Word engine) reads — it has no concept of max-width, but it does
+  //    honour the `width` attribute as a hard column cap.
+  //    The CSS max-width here handles modern web/email clients correctly.
+  //    <center> around it ensures the constrained block stays horizontally
+  //    centred in both the Word engine and standards-based renderers.
+  const maxWidthTableStyle: React.CSSProperties = {
+    width: "100%",
+    maxWidth: config.maxWidth,
+    borderCollapse: "collapse",
   };
 
   // Main content rendering
@@ -264,7 +288,43 @@ function Column({ children, config, devNode }: ColumnProps) {
             {...(config.width && { width: config.width })}
             {...(config.height && { height: config.height })}
           >
-            {renderContent()}
+            {config.maxWidth ? (
+              /*
+               * maxWidth wrapper — Outlook Classic compatibility pattern:
+               *
+               * <center> instructs the Word rendering engine to horizontally
+               * centre its child block, equivalent to margin: 0 auto in CSS.
+               *
+               * The inner table carries the `width` HTML attribute set to the
+               * maxWidth value. Outlook Classic reads `width` as a hard pixel
+               * cap; it has no concept of max-width so this is the only lever
+               * available. Modern clients receive the CSS max-width on the
+               * same table and behave correctly.
+               *
+               * The outer column remains at its normal width so it always
+               * fills its parent cell in every client — only the inner
+               * content is capped.
+               */
+              <center>
+                <table
+                  aria-label="Column Max Width Wrapper"
+                  role="presentation"
+                  cellPadding={0}
+                  cellSpacing={0}
+                  border={0}
+                  width={config.maxWidth}
+                  style={maxWidthTableStyle}
+                >
+                  <tbody>
+                    <tr>
+                      <td>{renderContent()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </center>
+            ) : (
+              renderContent()
+            )}
           </td>
         </tr>
       </tbody>

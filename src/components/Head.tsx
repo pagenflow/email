@@ -92,41 +92,7 @@ export default function Head({
                 mso-line-height-rule: exactly;
             }
         }
-        @media only screen and (max-width: 768px) {
-          .row-content-table[data-mobile-justify="center"] { margin: 0 auto !important; float: none !important; }
-          .row-content-table[data-mobile-justify="start"] { margin: 0 !important; float: left !important; }
-          .row-content-table[data-mobile-justify="end"] { margin: 0 0 0 auto !important; float: right !important; }
-          .row-content-table[data-mobile-align="center"] .child-cell { vertical-align: middle !important; }
-          .row-content-table[data-mobile-align="start"] .child-cell { vertical-align: top !important; }
-          .row-content-table[data-mobile-align="end"] .child-cell { vertical-align: bottom !important; }
-          .row-content-table[data-mobile-wrap="true"] { width: 100% !important; max-width: 100% !important; }
-          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr { display: block !important; }
-          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr > .child-cell {
-            display: block !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-          }
-          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr > .row-gap-td {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
-          .row-content-table[data-mobile-wrap="true"] > tbody > .content-tr > .child-cell:not(:last-child) {
-            margin-bottom: 20px !important;
-          }
-          ${["10px", "15px", "20px", "24px", "30px", "40px", ...rowGaps]
-            .filter(
-              (gap: string, index: number, self: string[]) =>
-                self.indexOf(gap) === index,
-            )
-            .map(
-              (gap: string) => `
-              .row-content-table[data-mobile-wrap="true"][data-gap="${gap}"] > tbody > .content-tr > .child-cell:not(:last-child) {
-                margin-bottom: ${gap} !important;
-              }`,
-            )
-            .join("\n")}
-        }
+
         a { color: inherit; text-decoration: none; }
         ol, ul { margin: 0px; padding: 0px; list-style: none; }
         li {

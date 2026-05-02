@@ -56,7 +56,16 @@ export interface TextConfig {
 
   /** Word break behavior (e.g., 'break-all', 'break-word', 'keep-all', 'normal'). */
   wordBreak?: string;
+
+  /**
+   * Constrains the text block width in modern clients via CSS, and in
+   * Outlook Classic (Word rendering engine) via a <center> + table `width`
+   * HTML attribute pattern — identical to the Column maxWidth approach.
+   * The outer table always stays at 100% so no retro layout is disturbed;
+   * only the inner constrained table is capped.
+   */
   maxWidth?: string;
+
   listStyle?: string;
 }
 
@@ -90,6 +99,9 @@ function Text({ config, devMode, children }: TextProps) {
   } = config;
 
   // 1. TD Style: Where padding and background are reliably applied.
+  //    When maxWidth is set, this TD stays at width: 100% so it always fills
+  //    its parent — the inner maxWidth table (see below) does the actual
+  //    capping, keeping the outer layout intact in all clients.
   const tdStyle: CSSProperties = {
     padding: padding,
     backgroundColor: backgroundColor,
@@ -97,7 +109,10 @@ function Text({ config, devMode, children }: TextProps) {
     verticalAlign: "top",
   };
 
-  // 2. Content Style: Applied directly to a wrapper element
+  // 2. Content Style: Applied directly to the inner div wrapper.
+  //    maxWidth is intentionally omitted here — putting it on a div has no
+  //    effect in Outlook Classic (Word engine ignores CSS on div elements).
+  //    The constraint is enforced at the table level instead (see below).
   const contentStyle: CSSProperties = {
     color: color,
     textAlign: textAlign,
@@ -116,7 +131,19 @@ function Text({ config, devMode, children }: TextProps) {
     wordBreak: wordBreak as any,
     margin: "0",
     padding: "0",
-    maxWidth,
+  };
+
+  // 3. maxWidth constraining table style (modern clients).
+  //    The `width` HTML attribute on this table is what Outlook Classic
+  //    (Word engine) reads — it has no concept of max-width, but it does
+  //    honour the `width` attribute as a hard column cap.
+  //    The CSS max-width here handles modern web/email clients correctly.
+  //    <center> around it ensures the constrained block stays horizontally
+  //    centred in both the Word engine and standards-based renderers.
+  const maxWidthTableStyle: CSSProperties = {
+    width: "100%",
+    maxWidth: maxWidth,
+    borderCollapse: "collapse",
   };
 
   // Determine content to render
@@ -126,6 +153,15 @@ function Text({ config, devMode, children }: TextProps) {
   const processedHtml = isString
     ? injectLinkStyles(content, contentStyle as Record<string, string>)
     : "";
+
+  const innerContent = isString ? (
+    <div
+      style={contentStyle}
+      dangerouslySetInnerHTML={{ __html: processedHtml }}
+    />
+  ) : (
+    <div style={contentStyle}>{content}</div>
+  );
 
   return (
     <table
@@ -142,13 +178,41 @@ function Text({ config, devMode, children }: TextProps) {
       <tbody>
         <tr>
           <td style={tdStyle} align={textAlign as "left" | "center" | "right"}>
-            {isString ? (
-              <div
-                style={contentStyle}
-                dangerouslySetInnerHTML={{ __html: processedHtml }}
-              />
+            {maxWidth ? (
+              /*
+               * maxWidth wrapper — Outlook Classic compatibility pattern:
+               *
+               * <center> instructs the Word rendering engine to horizontally
+               * centre its child block, equivalent to margin: 0 auto in CSS.
+               *
+               * The inner table carries the `width` HTML attribute set to the
+               * maxWidth value. Outlook Classic reads `width` as a hard pixel
+               * cap; it has no concept of max-width so this is the only lever
+               * available. Modern clients receive the CSS max-width on the
+               * same table and behave correctly.
+               *
+               * The outer TD remains at width: 100% so it always fills its
+               * parent cell in every client — only the inner content is capped.
+               */
+              <center>
+                <table
+                  aria-label="Text Max Width Wrapper"
+                  role="presentation"
+                  cellPadding={0}
+                  cellSpacing={0}
+                  border={0}
+                  width={maxWidth}
+                  style={maxWidthTableStyle}
+                >
+                  <tbody>
+                    <tr>
+                      <td>{innerContent}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </center>
             ) : (
-              <div style={contentStyle}>{content}</div>
+              innerContent
             )}
           </td>
         </tr>
