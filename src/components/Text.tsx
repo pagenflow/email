@@ -1,6 +1,9 @@
 import { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import injectLinkStyles from "./utils/injectLinkStyles";
+import IInnerLink from "../types/IInnerLink";
+import { DataBindings } from "../types/DataBindings";
+import { bindingProps, rootBindingProps } from "./utils/bindingAttribute";
 
 export interface TextConfig {
   /** The text content or React nodes to render. */
@@ -67,15 +70,41 @@ export interface TextConfig {
   maxWidth?: string;
 
   listStyle?: string;
+
+  /** Inner link configuration for making the entire text block clickable */
+  innerLink?: IInnerLink;
 }
 
 export type TextProps = {
   config: TextConfig;
   devMode?: ReactNode;
   children?: ReactNode;
+  bindings?: DataBindings;
 };
 
-function Text({ config, devMode, children }: TextProps) {
+// Helper to build link href based on innerLink type
+function buildLinkHref(innerLink?: IInnerLink): string | null {
+  if (!innerLink || innerLink.type === "none") return null;
+
+  switch (innerLink.type) {
+    case "url":
+      return innerLink.url || null;
+    case "email":
+      return innerLink.email ? `mailto:${innerLink.email}` : null;
+    case "phone":
+      return innerLink.phone ? `tel:${innerLink.phone}` : null;
+    case "anchor":
+      return innerLink.anchor ? `#${innerLink.anchor}` : null;
+    case "page_top":
+      return "#top";
+    case "page_bottom":
+      return "#bottom";
+    default:
+      return null;
+  }
+}
+
+function Text({ config, devMode, children, bindings }: TextProps) {
   const {
     text,
     padding,
@@ -96,7 +125,12 @@ function Text({ config, devMode, children }: TextProps) {
     whiteSpace,
     wordBreak = "break-all",
     maxWidth,
+    innerLink,
   } = config;
+
+  // Resolve href and target from innerLink
+  const href = buildLinkHref(innerLink);
+  const target = innerLink?.target || "_blank";
 
   // 1. TD Style: Where padding and background are reliably applied.
   //    When maxWidth is set, this TD stays at width: 100% so it always fills
@@ -163,6 +197,43 @@ function Text({ config, devMode, children }: TextProps) {
     <div style={contentStyle}>{content}</div>
   );
 
+  const wrappedContent = maxWidth ? (
+    /*
+     * maxWidth wrapper — Outlook Classic compatibility pattern:
+     *
+     * <center> instructs the Word rendering engine to horizontally
+     * centre its child block, equivalent to margin: 0 auto in CSS.
+     *
+     * The inner table carries the `width` HTML attribute set to the
+     * maxWidth value. Outlook Classic reads `width` as a hard pixel
+     * cap; it has no concept of max-width so this is the only lever
+     * available. Modern clients receive the CSS max-width on the
+     * same table and behave correctly.
+     *
+     * The outer TD remains at width: 100% so it always fills its
+     * parent cell in every client — only the inner content is capped.
+     */
+    <center>
+      <table
+        aria-label="Text Max Width Wrapper"
+        role="presentation"
+        cellPadding={0}
+        cellSpacing={0}
+        border={0}
+        width={maxWidth}
+        style={maxWidthTableStyle}
+      >
+        <tbody>
+          <tr>
+            <td>{innerContent}</td>
+          </tr>
+        </tbody>
+      </table>
+    </center>
+  ) : (
+    innerContent
+  );
+
   return (
     <table
       aria-label="Text Block Wrapper"
@@ -170,6 +241,7 @@ function Text({ config, devMode, children }: TextProps) {
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...rootBindingProps(bindings)}
       style={{
         width: "100%",
         borderCollapse: "collapse",
@@ -178,41 +250,21 @@ function Text({ config, devMode, children }: TextProps) {
       <tbody>
         <tr>
           <td style={tdStyle} align={textAlign as "left" | "center" | "right"}>
-            {maxWidth ? (
-              /*
-               * maxWidth wrapper — Outlook Classic compatibility pattern:
-               *
-               * <center> instructs the Word rendering engine to horizontally
-               * centre its child block, equivalent to margin: 0 auto in CSS.
-               *
-               * The inner table carries the `width` HTML attribute set to the
-               * maxWidth value. Outlook Classic reads `width` as a hard pixel
-               * cap; it has no concept of max-width so this is the only lever
-               * available. Modern clients receive the CSS max-width on the
-               * same table and behave correctly.
-               *
-               * The outer TD remains at width: 100% so it always fills its
-               * parent cell in every client — only the inner content is capped.
-               */
-              <center>
-                <table
-                  aria-label="Text Max Width Wrapper"
-                  role="presentation"
-                  cellPadding={0}
-                  cellSpacing={0}
-                  border={0}
-                  width={maxWidth}
-                  style={maxWidthTableStyle}
-                >
-                  <tbody>
-                    <tr>
-                      <td>{innerContent}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </center>
+            {href && !devMode ? (
+              <a
+                href={href}
+                target={target}
+                {...(target === "_blank" ? { rel: "noopener noreferrer" } : {})}
+                style={{
+                  display: "block",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                {wrappedContent}
+              </a>
             ) : (
-              innerContent
+              wrappedContent
             )}
           </td>
         </tr>

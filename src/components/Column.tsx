@@ -1,6 +1,8 @@
 import { CSSProperties, Fragment, memo, ReactNode } from "react";
-import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
+import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import { listBindingProps, rootBindingProps } from "./utils/bindingAttribute";
 
 export interface BackgroundImageType {
   src: string;
@@ -43,6 +45,7 @@ export type ColumnProps = {
   children?: ReactNode;
   config: ColumnConfig;
   devNode?: ReactNode;
+  bindings?: DataBindings;
 };
 
 // Define the exact set of acceptable values for the 'valign' attribute
@@ -109,7 +112,7 @@ function getBorderStyle(border?: BorderConfig): CSSProperties {
   return style;
 }
 
-function Column({ children, config, devNode }: ColumnProps) {
+function Column({ children, config, devNode, bindings }: ColumnProps) {
   // Process children array for gap support
   const childrenArray = (
     Array.isArray(children) ? children : [children]
@@ -168,6 +171,7 @@ function Column({ children, config, devNode }: ColumnProps) {
     // treat it as content-box height and add padding on top, causing the
     // total to exceed the declared height in preview mode.
     verticalAlign: config.alignItems ? alignMap[config.alignItems] : "top",
+    background: "transparent",
   };
 
   // 4. Gap spacer style (used between children)
@@ -176,6 +180,7 @@ function Column({ children, config, devNode }: ColumnProps) {
     lineHeight: "1px",
     fontSize: "1px",
     width: "100%",
+    background: "transparent",
   };
 
   // 5. maxWidth constraining table style (modern clients).
@@ -210,9 +215,10 @@ function Column({ children, config, devNode }: ColumnProps) {
               config.justifyContent ? vAlignMap[config.justifyContent] : "top"
             }
             align={config.alignItems ? alignMap[config.alignItems] : "left"}
+            {...(numChildren > 1 ? {} : listBindingProps(bindings))}
           >
             {/* Content wrapper for gap support */}
-            {config.gap && numChildren > 1 ? (
+            {numChildren > 1 ? (
               <table
                 aria-label="Column Gap Wrapper"
                 role="presentation"
@@ -224,7 +230,7 @@ function Column({ children, config, devNode }: ColumnProps) {
                   borderCollapse: "collapse",
                 }}
               >
-                <tbody>
+                <tbody {...listBindingProps(bindings)}>
                   {childrenArray.map((child, index) => (
                     <Fragment key={`col-child-${index}`}>
                       <tr>
@@ -274,6 +280,7 @@ function Column({ children, config, devNode }: ColumnProps) {
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...rootBindingProps(bindings)}
       style={{
         position: "relative",
         ...outerTableStyle,

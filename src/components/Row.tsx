@@ -8,6 +8,11 @@ import {
 } from "../types";
 import IInnerLink from "../types/IInnerLink";
 import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import {
+  listBindingProps,
+  rootBindingProps
+} from "./utils/bindingAttribute";
 
 const justifyMap: Record<JustifyContent, TdAlign> = {
   start: "left",
@@ -45,6 +50,24 @@ export interface RowConfig {
    */
   fillWidth?: boolean;
 
+  /**
+   * Controls how child <td> widths are distributed across the row.
+   *
+   * - "equal"    → each child gets `${100 / numChildren}%`; table-layout:fixed
+   *                is applied so Outlook Classic honours the declaration.
+   * - string[]   → explicit width per child (px, %, or mixed), e.g.
+   *                ["200px","50%","1px"]. Length must match the number of
+   *                children; table-layout:fixed is applied.
+   * - undefined  → default / retrocompat: no width is set on child <td>s and
+   *                table-layout remains unset, preserving the original
+   *                shrink-wrap / fillWidth behaviour.
+   *
+   * Note: when mixing % and px the author is responsible for ensuring values
+   * do not overflow the row width — the same trade-off accepted by MJML and
+   * Foundation for Emails.
+   */
+  layoutColumns?: "equal" | string[];
+
   // Styling props
   padding?: string;
   backgroundColor?: string;
@@ -68,6 +91,7 @@ export type RowProps = {
   config: RowConfig;
   devNode?: ReactNode;
   devMode?: boolean;
+  bindings?: DataBindings;
 };
 
 function getBorderStyle(border?: BorderConfig): CSSProperties {
@@ -131,7 +155,24 @@ function getHrefFromInnerLink(innerLink?: IInnerLink): string | undefined {
   }
 }
 
-function Row({ children, config, devNode, devMode }: RowProps) {
+/**
+ * Resolves the width for a child <td> at the given index based on layoutColumns.
+ *
+ * - "equal"   → equal percentage share across all children
+ * - string[]  → explicit value at the matching index (px, %, or mixed)
+ * - undefined → undefined, so no width attribute is set (retrocompat)
+ */
+function resolveChildColumnWidth(
+  layoutColumns: RowConfig["layoutColumns"],
+  index: number,
+  numChildren: number,
+): string | undefined {
+  if (!layoutColumns) return undefined;
+  if (layoutColumns === "equal") return `${100 / numChildren}%`;
+  return layoutColumns[index];
+}
+
+function Row({ children, config, devNode, devMode, bindings }: RowProps) {
   const childrenArray = (
     Array.isArray(children) ? children : [children]
   ).filter((child) => child != null) as ReactNode[];
@@ -146,6 +187,10 @@ function Row({ children, config, devNode, devMode }: RowProps) {
   // / mobile-gap-spacer class names so that stacking works via non-@media CSS
   // rules that survive Gmail's stylesheet stripping.
   const isStacking = config.mobile?.wrap === true && numChildren > 1;
+
+  // Whether layoutColumns is active. When true, table-layout:fixed is applied
+  // to the content table so Outlook Classic honours the declared column widths.
+  const hasLayoutColumns = config.layoutColumns !== undefined;
 
   // 1. Outer TD: Background, Border Radius, Width, Height.
   const backgroundTdStyle: React.CSSProperties = {
@@ -190,12 +235,21 @@ function Row({ children, config, devNode, devMode }: RowProps) {
   //      Content table fills available space, giving Outlook Classic a hard
   //      boundary so text children get a constrained box and line wrapping
   //      triggers correctly. Use for rows containing text + image layouts.
+  //
+  //    layoutColumns (any value) → additionally applies table-layout: fixed
+  //      so Outlook Classic honours the per-child width declarations.
+  //      Compatible with both fillWidth modes.
   const contentTableStyle: React.CSSProperties = {
-    width: config.fillWidth ? "100%" : "auto",
+    // When layoutColumns is active, force 100% so Outlook Classic has a
+    // concrete boundary to resolve percentage column widths against.
+    // table-layout:fixed is meaningless without a fixed reference width.
+    width: hasLayoutColumns || config.fillWidth ? "100%" : "auto",
     height: "100%",
     borderCollapse: "collapse",
     minWidth: "1px",
-    ...(!config.fillWidth && { maxWidth: config.width || "100%" }),
+    ...(!config.fillWidth &&
+      !hasLayoutColumns && { maxWidth: config.width || "100%" }),
+    ...(hasLayoutColumns && { tableLayout: "fixed" }),
   };
 
   // 5. Gap TD.
@@ -203,6 +257,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
     width: config.gap || "0",
     lineHeight: "1px",
     fontSize: "1px",
+    background: "transparent",
   };
 
   const tdAlign = config.justifyContent
@@ -217,6 +272,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...(!href ? rootBindingProps(bindings) : {})}
       style={{
         position: "relative",
         width: config.width || "100%",
@@ -286,68 +342,93 @@ function Row({ children, config, devNode, devMode }: RowProps) {
                               data-gap={config.gap}
                             >
                               <tbody>
-                                <tr className="content-tr">
-                                  {childrenArray.map((child, index) => (
-                                    <Fragment key={`row-child-${index}`}>
-                                      <td
-                                        align={tdAlign}
-                                        style={{
-                                          verticalAlign: tdValign,
-                                          textAlign: tdAlign,
-                                          padding: "0",
-                                          margin: "0",
-                                        }}
-                                        // Mirror of Container's stack-td pattern: when isStacking,
-                                        // the non-@media .stack-td rule forces display:block +
-                                        // width:100% on each child, which survives Gmail's
-                                        // @media stripping and achieves true mobile stacking.
-                                        className={`child-cell${isStacking ? " stack-td" : ""}`}
-                                      >
-                                        {child}
+                                <tr
+                                  className="content-tr"
+                                  {...listBindingProps(bindings)}
+                                >
+                                  {childrenArray.map((child, index) => {
+                                    // Resolve the column width for this child based on
+                                    // layoutColumns. undefined when layoutColumns is not set,
+                                    // preserving the original behaviour (retrocompat).
+                                    const columnWidth = resolveChildColumnWidth(
+                                      config.layoutColumns,
+                                      index,
+                                      numChildren,
+                                    );
 
-                                        {/*
-                                         * Mirror of Container's mobile-gap-spacer pattern:
-                                         * Gap is injected structurally inside each child (not
-                                         * between columns) so it survives Gmail. display:none
-                                         * keeps it hidden on desktop via the non-@media
-                                         * .mobile-gap-spacer rule already defined in Head.tsx.
-                                         * Only rendered between children (not after the last).
-                                         */}
-                                        {isStacking &&
-                                          index < numChildren - 1 &&
+                                    return (
+                                      <Fragment key={`row-child-${index}`}>
+                                        <td
+                                          align={tdAlign}
+                                          // Apply the resolved column width as both the HTML
+                                          // width attribute (Outlook Classic) and inline style
+                                          // (modern clients). When undefined, neither is set,
+                                          // keeping the original shrink-wrap behaviour intact.
+                                          {...(columnWidth && {
+                                            width: columnWidth,
+                                          })}
+                                          style={{
+                                            verticalAlign: tdValign,
+                                            textAlign: tdAlign,
+                                            padding: "0",
+                                            margin: "0",
+                                            ...(columnWidth && {
+                                              width: columnWidth,
+                                            }),
+                                          }}
+                                          // Mirror of Container's stack-td pattern: when isStacking,
+                                          // the non-@media .stack-td rule forces display:block +
+                                          // width:100% on each child, which survives Gmail's
+                                          // @media stripping and achieves true mobile stacking.
+                                          className={`child-cell${isStacking ? " stack-td" : ""}`}
+                                        >
+                                          {child}
+
+                                          {/*
+                                           * Mirror of Container's mobile-gap-spacer pattern:
+                                           * Gap is injected structurally inside each child (not
+                                           * between columns) so it survives Gmail. display:none
+                                           * keeps it hidden on desktop via the non-@media
+                                           * .mobile-gap-spacer rule already defined in Head.tsx.
+                                           * Only rendered between children (not after the last).
+                                           */}
+                                          {isStacking &&
+                                            index < numChildren - 1 &&
+                                            config.gap && (
+                                              <div
+                                                className="mobile-gap-spacer"
+                                                style={{
+                                                  display: "none",
+                                                  fontSize: "0",
+                                                  lineHeight: "0",
+                                                  height: config.gap,
+                                                  background: "transparent",
+                                                }}
+                                              >
+                                                &nbsp;
+                                              </div>
+                                            )}
+                                        </td>
+
+                                        {/* Gap between children, not after last */}
+                                        {index < numChildren - 1 &&
                                           config.gap && (
-                                            <div
-                                              className="mobile-gap-spacer"
-                                              style={{
-                                                display: "none",
-                                                fontSize: "0",
-                                                lineHeight: "0",
-                                                height: config.gap,
-                                              }}
+                                            <td
+                                              key={`row-gap-${index}`}
+                                              width={config.gap}
+                                              style={gapTdStyle}
+                                              // Mirror of Container's desktop-gap-column pattern:
+                                              // when isStacking, the non-@media .desktop-gap-column
+                                              // rule collapses the between-column gap td so it does
+                                              // not create phantom space while children are stacked.
+                                              className={`row-gap-td${isStacking ? " desktop-gap-column" : ""}`}
                                             >
                                               &nbsp;
-                                            </div>
+                                            </td>
                                           )}
-                                      </td>
-
-                                      {/* Gap between children, not after last */}
-                                      {index < numChildren - 1 &&
-                                        config.gap && (
-                                          <td
-                                            key={`row-gap-${index}`}
-                                            width={config.gap}
-                                            style={gapTdStyle}
-                                            // Mirror of Container's desktop-gap-column pattern:
-                                            // when isStacking, the non-@media .desktop-gap-column
-                                            // rule collapses the between-column gap td so it does
-                                            // not create phantom space while children are stacked.
-                                            className={`row-gap-td${isStacking ? " desktop-gap-column" : ""}`}
-                                          >
-                                            &nbsp;
-                                          </td>
-                                        )}
-                                    </Fragment>
-                                  ))}
+                                      </Fragment>
+                                    );
+                                  })}
                                 </tr>
                               </tbody>
                             </table>
@@ -377,6 +458,7 @@ function Row({ children, config, devNode, devMode }: RowProps) {
       <a
         href={href}
         {...(target && { target })}
+        {...rootBindingProps(bindings)}
         style={{
           textDecoration: "none",
           color: "inherit",

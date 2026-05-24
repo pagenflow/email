@@ -1,5 +1,8 @@
 import { CSSProperties, memo, ReactNode } from "react";
+import IInnerLink from "../types/IInnerLink";
 import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import { rootBindingProps } from "./utils/bindingAttribute";
 import injectLinkStyles from "./utils/injectLinkStyles";
 
 // Define the available HTML heading levels
@@ -59,15 +62,41 @@ export interface HeadingConfig {
 
   /** White space handling (e.g., 'nowrap', 'pre', 'pre-wrap', 'pre-line', 'normal'). */
   whiteSpace?: string;
+
+  /** Inner link configuration for making the entire heading block clickable */
+  innerLink?: IInnerLink;
 }
 
 export type HeadingProps = {
   config: HeadingConfig;
   devMode?: ReactNode;
   children?: ReactNode;
+  bindings?: DataBindings;
 };
 
-function Heading({ config, devMode, children }: HeadingProps) {
+// Helper to build link href based on innerLink type
+function buildLinkHref(innerLink?: IInnerLink): string | null {
+  if (!innerLink || innerLink.type === "none") return null;
+
+  switch (innerLink.type) {
+    case "url":
+      return innerLink.url || null;
+    case "email":
+      return innerLink.email ? `mailto:${innerLink.email}` : null;
+    case "phone":
+      return innerLink.phone ? `tel:${innerLink.phone}` : null;
+    case "anchor":
+      return innerLink.anchor ? `#${innerLink.anchor}` : null;
+    case "page_top":
+      return "#top";
+    case "page_bottom":
+      return "#bottom";
+    default:
+      return null;
+  }
+}
+
+function Heading({ config, devMode, children, bindings }: HeadingProps) {
   const {
     text,
     level = "h1",
@@ -87,7 +116,12 @@ function Heading({ config, devMode, children }: HeadingProps) {
     backgroundColor,
     wordBreak,
     whiteSpace,
+    innerLink,
   } = config;
+
+  // Resolve href and target from innerLink
+  const href = buildLinkHref(innerLink);
+  const target = innerLink?.target || "_blank";
 
   // Determine the content to render
   const content = text ?? children;
@@ -132,6 +166,15 @@ function Heading({ config, devMode, children }: HeadingProps) {
   // Dynamically create the Heading element
   const HeadingTag = level;
 
+  const headingElement = isString ? (
+    <HeadingTag
+      style={headingStyle}
+      dangerouslySetInnerHTML={{ __html: processedHtml }}
+    />
+  ) : (
+    <HeadingTag style={headingStyle}>{content}</HeadingTag>
+  );
+
   return (
     // Wrap the heading content in a table for padding/width/background management.
     <table
@@ -140,6 +183,7 @@ function Heading({ config, devMode, children }: HeadingProps) {
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...rootBindingProps(bindings)}
       style={{
         width: "100%",
         borderCollapse: "collapse",
@@ -149,14 +193,21 @@ function Heading({ config, devMode, children }: HeadingProps) {
         <tr>
           {/* TD: Applies Padding, Background, and Alignment */}
           <td style={tdStyle} align={textAlign as "left" | "center" | "right"}>
-            {/* The actual Heading Tag with all inline styles */}
-            {isString ? (
-              <HeadingTag
-                style={headingStyle}
-                dangerouslySetInnerHTML={{ __html: processedHtml }}
-              />
+            {href && !devMode ? (
+              <a
+                href={href}
+                target={target}
+                {...(target === "_blank" ? { rel: "noopener noreferrer" } : {})}
+                style={{
+                  display: "block",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                {headingElement}
+              </a>
             ) : (
-              <HeadingTag style={headingStyle}>{content}</HeadingTag>
+              headingElement
             )}
           </td>
         </tr>

@@ -1,7 +1,9 @@
 import { CSSProperties, memo, ReactNode } from "react";
+import { BorderConfig } from "../types";
 import IInnerLink from "../types/IInnerLink";
 import { arePropsEqual } from "../utils/memoUtils";
-import { BorderConfig } from "../types";
+import { DataBindings } from "../types/DataBindings";
+import { rootBindingProps } from "./utils/bindingAttribute";
 
 export interface IconConfig {
   /** Icon identifier for the Iconify API */
@@ -46,6 +48,7 @@ export type IconProps = {
   devNode?: ReactNode;
   devMode?: boolean;
   children?: ReactNode;
+  bindings?: DataBindings;
 };
 
 // Map alignment to HTML 'align' attribute
@@ -205,7 +208,7 @@ function buildLinkHref(innerLink?: IInnerLink): string | null {
   }
 }
 
-function Icon({ config, devNode, devMode, children }: IconProps) {
+function Icon({ config, devNode, devMode, children, bindings }: IconProps) {
   const {
     // base64Source,
     width,
@@ -412,6 +415,7 @@ function Icon({ config, devNode, devMode, children }: IconProps) {
       cellSpacing={0}
       border={0}
       align={align}
+      {...rootBindingProps(bindings)}
       style={{
         // --- Start dev
         position: "relative",

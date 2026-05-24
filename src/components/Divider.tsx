@@ -1,5 +1,7 @@
 import { memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import { rootBindingProps } from "./utils/bindingAttribute";
 
 export interface DividerConfig {
   height?: string;
@@ -13,9 +15,10 @@ export interface DividerConfig {
 export type DividerProps = {
   config: DividerConfig;
   devNode?: ReactNode;
+  bindings?: DataBindings;
 };
 
-function Divider({ config, devNode }: DividerProps) {
+function Divider({ config, devNode, bindings }: DividerProps) {
   const {
     height = "1px",
     color = "#cccccc",
@@ -29,8 +32,12 @@ function Divider({ config, devNode }: DividerProps) {
 
   // Parse margin into paddingTop / paddingBottom for the outer TD.
   // Outlook ignores shorthand "20px 0" on TDs — must be explicit.
-  const [marginTopRaw = "0", marginRightRaw = "0", marginBottomRaw, marginLeftRaw] =
-    margin.trim().split(/\s+/);
+  const [
+    marginTopRaw = "0",
+    marginRightRaw = "0",
+    marginBottomRaw,
+    marginLeftRaw,
+  ] = margin.trim().split(/\s+/);
   const marginTop = marginTopRaw;
   const marginBottom = marginBottomRaw ?? marginTopRaw; // "20px 0" → top=20px, bottom=20px
   void marginRightRaw;
@@ -38,7 +45,8 @@ function Divider({ config, devNode }: DividerProps) {
 
   // Outlook requires align on the outer TD to correctly position
   // a fixed-width inner table (e.g. width="300px").
-  const alignAttr = align === "left" ? "left" : align === "right" ? "right" : "center";
+  const alignAttr =
+    align === "left" ? "left" : align === "right" ? "right" : "center";
 
   return (
     <table
@@ -46,6 +54,7 @@ function Divider({ config, devNode }: DividerProps) {
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...rootBindingProps(bindings)}
       style={{
         position: "relative", // dev overlay anchor
         width: "100%",
@@ -120,7 +129,7 @@ function Divider({ config, devNode }: DividerProps) {
                           `font-size:0;` +
                           `padding:0;` +
                           `background-color:${color};` +
-                          `mso-line-height-rule:exactly;`
+                          `mso-line-height-rule:exactly;`,
                       );
                     }}
                     style={{

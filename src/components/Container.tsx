@@ -1,6 +1,8 @@
 import { CSSProperties, Fragment, memo, ReactNode } from "react";
-import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
+import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import { listBindingProps, rootBindingProps } from "./utils/bindingAttribute";
 
 export type WidthType = "full" | "fixed";
 export type WidthDistributionType = "equals" | "ratio" | "manual";
@@ -25,7 +27,7 @@ export type ChildrenConstraints =
 
 export interface ContainerConfig {
   widthType: WidthType;
-  childrenConstraints: ChildrenConstraints;
+  childrenConstraints?: ChildrenConstraints;
 
   shouldWrap?: boolean;
   borderRadius?: string;
@@ -48,6 +50,7 @@ export interface ContainerConfig {
 export type ContainerProps = {
   config: ContainerConfig;
   children?: ReactNode;
+  bindings?: DataBindings;
   devMode?: boolean;
   devNode?: ReactNode;
 };
@@ -109,7 +112,13 @@ function getBorderStyle(border?: BorderConfig): CSSProperties {
   return style;
 }
 
-function Container({ children, config, devMode, devNode }: ContainerProps) {
+function Container({
+  children,
+  config,
+  bindings,
+  devMode,
+  devNode,
+}: ContainerProps) {
   const { widthType, childrenConstraints } = config;
 
   const childrenArray = (
@@ -132,7 +141,7 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
   })();
 
   const getChildWidths = (() => {
-    const { widthDistributionType } = childrenConstraints;
+    const { widthDistributionType } = childrenConstraints ?? {};
     const totalGapSpace = gapWidthPx * (numChildren > 1 ? numChildren - 1 : 0);
     const remainingContentSpace = containerWidthPx - totalGapSpace;
 
@@ -231,6 +240,7 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
     width: config.gap || "0",
     lineHeight: "1px",
     fontSize: "1px",
+    background: "transparent",
   };
 
   const justifyAlign = config.justifyContent
@@ -268,6 +278,7 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
                   fontSize: "0",
                   lineHeight: "0",
                   height: config.gap,
+                  background: "transparent",
                 }}
               >
                 &nbsp;
@@ -310,6 +321,7 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
         position: "relative",
         ...outerTableStyle,
       }}
+      {...rootBindingProps(bindings)}
     >
       <tbody>
         <tr>
@@ -365,7 +377,9 @@ function Container({ children, config, devMode, devNode }: ContainerProps) {
                               style={contentTableStyle}
                             >
                               <tbody>
-                                <tr>{rowElements}</tr>
+                                <tr {...listBindingProps(bindings)}>
+                                  {rowElements}
+                                </tr>
                               </tbody>
                             </table>
                           </td>

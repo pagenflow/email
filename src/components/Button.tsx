@@ -2,6 +2,8 @@ import { CSSProperties, memo, ReactNode } from "react";
 import { BorderConfig } from "../types";
 import IInnerLink from "../types/IInnerLink";
 import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import { rootBindingProps } from "./utils/bindingAttribute";
 
 // Helper for alignment
 type TdAlign = "center" | "left" | "right";
@@ -88,6 +90,7 @@ export interface ButtonConfig {
 export type ButtonProps = {
   config: ButtonConfig;
   devMode?: boolean;
+  bindings?: DataBindings;
 };
 
 // Map alignment to HTML 'align' attribute
@@ -169,7 +172,7 @@ function getBorderStyleString(border?: BorderConfig): string {
   return styles.join(" ");
 }
 
-function Button({ config, devMode }: ButtonProps) {
+function Button({ config, devMode, bindings }: ButtonProps) {
   const {
     innerLink,
     children,
@@ -299,6 +302,7 @@ function Button({ config, devMode }: ButtonProps) {
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...rootBindingProps(bindings)}
       style={{
         width: "100%",
         borderCollapse: "collapse",

@@ -1,7 +1,9 @@
 import { CSSProperties, memo, ReactNode } from "react";
-import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
 import IInnerLink from "../types/IInnerLink";
+import { arePropsEqual } from "../utils/memoUtils";
+import { DataBindings } from "../types/DataBindings";
+import { rootBindingProps } from "./utils/bindingAttribute";
 
 /**
  * RULES NOT TO BE REMOVED
@@ -28,7 +30,7 @@ export interface ImageMobileConfig {
 }
 
 export interface ImageConfig {
-  src: string;
+  src?: string;
   alt: string;
   width?: string;
   height?: string;
@@ -50,6 +52,27 @@ export interface ImageConfig {
   objectFit?: CSSProperties["objectFit"];
   objectPosition?: string;
   mobile?: ImageMobileConfig;
+  /**
+   * Pixel width constraint for Outlook Classic only.
+   *
+   * Outlook Classic ignores CSS width/maxWidth on <img> and always renders
+   * images at their intrinsic size. The only reliable workaround is a wrapping
+   * <td> with a hard pixel `width` attribute, injected inside an MSO
+   * conditional comment so it is invisible to every other client.
+   *
+   * When set, the image is wrapped in:
+   *   <!--[if mso]><table><tr><td width="${outlookWidth}"><![endif]-->
+   *   <img ... />
+   *   <!--[if mso]></td></tr></table><![endif]-->
+   *
+   * Modern clients (Gmail, Apple Mail, mobile) ignore MSO conditional comments
+   * entirely — they never see the wrapping <td> and continue to render the
+   * image using its CSS styles alone.
+   *
+   * Retrocompat: undefined by default. Existing templates that do not set this
+   * property are completely unaffected.
+   */
+  outlookWidth?: string;
 }
 
 export type ImageProps = {
@@ -57,6 +80,7 @@ export type ImageProps = {
   devNode?: ReactNode;
   devMode?: boolean;
   previewMode?: boolean;
+  bindings?: DataBindings;
 };
 
 // Helper to build link href based on innerLink type
@@ -133,8 +157,14 @@ function getBorderStyleString(border?: BorderConfig): string {
   return styles.join(" ");
 }
 
-function Image({ config, devNode, devMode }: ImageProps) {
-  const { src, alt, innerLink, mobile } = config;
+function Image({ config, devNode, devMode, bindings }: ImageProps) {
+  const { src: originalSrc, alt, innerLink, mobile } = config;
+
+  // In dev mode, if there's no src, use the placeholder
+  const src =
+    devMode && !originalSrc
+      ? "https://placehold.co/300x200?text=select+an+image&font=poppins"
+      : originalSrc;
 
   // Resolve href and target from innerLink
   const href = buildLinkHref(innerLink);
@@ -154,48 +184,39 @@ function Image({ config, devNode, devMode }: ImageProps) {
   const heightAttr = config.height?.replace("px", "");
 
   // Determine the table's "initial" width.
-  // If it's 300px, the table should be 300px, not 100%.
   const tableWidth = isPercent ? desktopWidth : `${widthAttr}px`;
 
-  // When width is a percentage, Outlook ignores CSS and renders the image at
-  // its intrinsic pixel size. Setting a concrete `width` HTML attribute gives
-  // Outlook a value to constrain against while modern clients continue to use
-  // the CSS `width: 100%` for fluid rendering.
-  //
-  // If `maxWidth` is a pixel value (e.g. "600px"), we extract the number and
-  // use it as the HTML `width` attribute so Outlook enforces that cap.
-  // Other clients ignore the attribute and rely on CSS styles instead.
-  // If `maxWidth` is not set or is not a pixel value (e.g. "100%"), we fall
-  // back to the original behaviour (numeric string for px widths, undefined
-  // for % widths).
-  const maxWidthPx = config.maxWidth?.endsWith("px")
-    ? parseInt(config.maxWidth, 10)
-    : undefined;
+  // Calculate width attribute for Outlook
+  let imgWidthAttr: number | undefined;
+  if (config.outlookWidth) {
+    // Use explicit outlookWidth if provided
+    imgWidthAttr = parseInt(config.outlookWidth, 10);
+  } else if (isPercent) {
+    // For percentage widths, use maxWidth as fallback for Outlook
+    const maxWidthPx = config.maxWidth?.endsWith("px")
+      ? parseInt(config.maxWidth, 10)
+      : undefined;
+    imgWidthAttr = maxWidthPx ?? undefined;
+  } else {
+    // For fixed pixel widths, use that value
+    imgWidthAttr = widthAttr ? parseInt(widthAttr, 10) : undefined;
+  }
 
-  const imgWidthAttr = isPercent ? (maxWidthPx ?? undefined) : widthAttr;
-
-  // 2. Mobile Overrides — only emit CSS properties that are explicitly set,
-  // so unspecified properties are left untouched (no forced defaults).
+  // 2. Mobile Overrides
   let mobileCss = "";
   if (mobile) {
-    // .wrap-${imgClass} rules
-    const wrapRules: string[] = [
-      // Always reset min-width so the px lock from desktop can be overridden
-      "min-width: 0 !important;",
-    ];
+    const wrapRules: string[] = ["min-width: 0 !important;"];
     if (mobile.width !== undefined)
       wrapRules.push(`width: ${mobile.width} !important;`);
     if (mobile.maxWidth !== undefined)
       wrapRules.push(`max-width: ${mobile.maxWidth} !important;`);
 
-    // .td-${imgClass} rules
     const tdRules: string[] = [];
     if (mobile.padding !== undefined)
       tdRules.push(`padding: ${mobile.padding} !important;`);
     if (mobile.backgroundColor !== undefined)
       tdRules.push(`background-color: ${mobile.backgroundColor} !important;`);
 
-    // .${imgClass} rules
     const imgRules: string[] = [];
     if (mobile.width !== undefined)
       imgRules.push(`width: ${mobile.width} !important;`);
@@ -219,7 +240,6 @@ function Image({ config, devNode, devMode }: ImageProps) {
     mobileCss = `
       @media screen and (max-width: 768px) {
         .wrap-${imgClass} {
-          /* This breaks the px lock from desktop and makes it fluid */
           ${wrapRules.join("\n          ")}
         }
         .td-${imgClass} {
@@ -258,6 +278,41 @@ function Image({ config, devNode, devMode }: ImageProps) {
     />
   );
 
+  // Outlook Classic wrapper - only applied when outlookWidth is explicitly set
+  // OR when we need to constrain a percentage-width image in Outlook
+  const needsOutlookWrapper =
+    config.outlookWidth || (isPercent && imgWidthAttr);
+
+  const finalImageElement = needsOutlookWrapper ? (
+    <>
+      <style
+        dangerouslySetInnerHTML={{
+          __html:
+            `</style>` +
+            `<!--[if mso]>` +
+            `<table cellpadding="0" cellspacing="0" border="0" style="width: ${imgWidthAttr}px;">` +
+            `<tr>` +
+            `<td style="padding: 0; margin: 0;" width="${imgWidthAttr}">` +
+            `<img src="${src}" alt="${alt || ""}" width="${imgWidthAttr}" height="${heightAttr !== "auto" ? heightAttr : ""}" style="display: block; width: 100%; height: auto;" />` +
+            `</td>` +
+            `</tr>` +
+            `</table>` +
+            `<![endif]-->` +
+            `<!--[if !mso]><!-->` +
+            `<style>`,
+        }}
+      />
+      {imageElement}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `</style>` + `<!--<![endif]-->` + `<style>`,
+        }}
+      />
+    </>
+  ) : (
+    imageElement
+  );
+
   return (
     <>
       {mobile && <style dangerouslySetInnerHTML={{ __html: mobileCss }} />}
@@ -267,9 +322,10 @@ function Image({ config, devNode, devMode }: ImageProps) {
         cellSpacing={0}
         border={0}
         className={`wrap-${imgClass}`}
-        align="center" // Ensures a 300px image stays centered in its parent
+        align="center"
+        {...rootBindingProps(bindings)}
         style={{
-          width: tableWidth, // Fixed px here prevents the 100% "ghost space"
+          width: tableWidth,
           maxWidth: "100%",
           borderCollapse: "collapse",
           margin: "0 auto",
@@ -285,7 +341,7 @@ function Image({ config, devNode, devMode }: ImageProps) {
                 backgroundColor: config.backgroundColor,
                 fontSize: "0",
                 lineHeight: "0",
-                width: tableWidth, // Lock the cell as well
+                width: tableWidth,
               }}
             >
               {href && !devMode ? (
@@ -297,10 +353,10 @@ function Image({ config, devNode, devMode }: ImageProps) {
                     : {})}
                   style={{ display: "block", width: "100%" }}
                 >
-                  {imageElement}
+                  {finalImageElement}
                 </a>
               ) : (
-                imageElement
+                finalImageElement
               )}
             </td>
           </tr>

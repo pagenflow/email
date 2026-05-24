@@ -1,6 +1,12 @@
 import React, { CSSProperties, memo, ReactNode } from "react";
 import { arePropsEqual } from "../utils/memoUtils";
 import { BorderConfig } from "../types";
+import { DataBindings } from "../types/DataBindings";
+import {
+  bindingProps,
+  listBindingProps,
+  rootBindingProps,
+} from "./utils/bindingAttribute";
 
 export type SectionConfig = {
   sectionType: "header" | "footer" | "content";
@@ -20,6 +26,7 @@ export interface SectionProps {
   config: SectionConfig;
   children?: ReactNode;
   devNode?: ReactNode;
+  bindings?: DataBindings;
 }
 
 function getBorderStyle(border?: BorderConfig): CSSProperties {
@@ -66,6 +73,7 @@ const Section: React.FC<SectionProps> = ({
   config,
   children,
   devNode,
+  bindings,
 }: SectionProps) => {
   const { sectionType, padding } = config;
   return (
@@ -75,6 +83,7 @@ const Section: React.FC<SectionProps> = ({
       cellPadding={0}
       cellSpacing={0}
       border={0}
+      {...rootBindingProps(bindings)}
       style={{
         position: "relative",
         width: "100%",
@@ -94,6 +103,7 @@ const Section: React.FC<SectionProps> = ({
             style={{
               padding: padding,
             }}
+            {...listBindingProps(bindings)}
           >
             {children}
           </td>
@@ -116,7 +126,6 @@ const Section: React.FC<SectionProps> = ({
               >
                 Section | {sectionType}
               </span>
-              {children}
             </td>
           </tr>
         </tfoot>
