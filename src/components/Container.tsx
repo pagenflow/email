@@ -3,6 +3,7 @@ import { BorderConfig } from "../types";
 import { arePropsEqual } from "../utils/memoUtils";
 import { DataBindings } from "../types/DataBindings";
 import { listBindingProps, rootBindingProps } from "./utils/bindingAttribute";
+import isGapZero from "./utils/isGapZero";
 
 export type WidthType = "full" | "fixed";
 export type WidthDistributionType = "equals" | "ratio" | "manual";
@@ -270,7 +271,7 @@ function Container({
           >
             {child}
 
-            {isStacking && (
+            {isStacking && !isGapZero(config.gap) && (
               <div
                 className="mobile-gap-spacer"
                 style={{
@@ -286,14 +287,16 @@ function Container({
             )}
           </td>
 
-          <td
-            key={`gap-${index}`}
-            className={isStacking ? "desktop-gap-column" : undefined}
-            width={config.gap}
-            style={gapTdStyle}
-          >
-            &nbsp;
-          </td>
+          {!isGapZero(config.gap) && (
+            <td
+              key={`gap-${index}`}
+              className={isStacking ? "desktop-gap-column" : undefined}
+              width={config.gap}
+              style={gapTdStyle}
+            >
+              &nbsp;
+            </td>
+          )}
         </Fragment>
       );
     }

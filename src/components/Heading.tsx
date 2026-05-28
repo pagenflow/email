@@ -4,6 +4,7 @@ import { arePropsEqual } from "../utils/memoUtils";
 import { DataBindings } from "../types/DataBindings";
 import { rootBindingProps } from "./utils/bindingAttribute";
 import injectLinkStyles from "./utils/injectLinkStyles";
+import injectParagraphReset from "./utils/injectParagraphReset";
 
 // Define the available HTML heading levels
 export type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -160,7 +161,9 @@ function Heading({ config, devMode, children, bindings }: HeadingProps) {
   };
 
   const processedHtml = isString
-    ? injectLinkStyles(content, headingStyle as Record<string, string>)
+    ? injectParagraphReset(
+        injectLinkStyles(content, headingStyle as Record<string, string>),
+      )
     : "";
 
   // Dynamically create the Heading element

@@ -3,6 +3,7 @@ import { BorderConfig } from "../types";
 import { arePropsEqual } from "../utils/memoUtils";
 import { DataBindings } from "../types/DataBindings";
 import { listBindingProps, rootBindingProps } from "./utils/bindingAttribute";
+import isGapZero from "./utils/isGapZero";
 
 export interface BackgroundImageType {
   src: string;
@@ -255,7 +256,7 @@ function Column({ children, config, devNode, bindings }: ColumnProps) {
                         </td>
                       </tr>
                       {/* Add gap spacer between children (not after last child) */}
-                      {index < numChildren - 1 && (
+                      {index < numChildren - 1 && !isGapZero(config.gap) && (
                         <tr>
                           <td style={gapSpacerStyle}>&nbsp;</td>
                         </tr>

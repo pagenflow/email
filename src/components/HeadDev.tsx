@@ -60,7 +60,13 @@ export default function HeadDev({
       .builder-canvas { background-color: ${backgroundColor ?? "transparent"} !important; }
 
       /* Disable browser default margin */
-      .builder-canvas p { margin: 0; }
+      .builder-canvas p {
+        margin: 0;
+        margin-block-start: 0px;
+        margin-block-end: 0px;
+        margin-inline-start: 0px;
+        margin-inline-end: 0px;
+      }
     `;
 
     const globalStyles = `

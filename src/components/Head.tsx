@@ -48,7 +48,13 @@ export default function Head({
             line-height: inherit !important; 
         }
         body { background-color: ${backgroundColor} !important; }
-        p { margin: 0; }
+        p {
+          margin: 0;
+          margin-block-start: 0px;
+          margin-block-end: 0px;
+          margin-inline-start: 0px;
+          margin-inline-end: 0px;
+        }
     `;
 
   const globalStyles = `
