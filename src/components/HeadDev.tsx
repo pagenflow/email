@@ -87,14 +87,6 @@ export default function HeadDev({
         text-align: inherit !important;
       }
 
-      /* Responsive container styles - Using container query */
-      @container builder-canvas (max-width: 768px) {
-        .container-fixed-width {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
-      }
-
       @container builder-canvas (max-width: 768px) {
         .hide-on-mobile {
           display: none !important;

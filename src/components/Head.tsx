@@ -59,12 +59,6 @@ export default function Head({
 
   const globalStyles = `
         @media screen and (max-width: 768px) {
-            .container-fixed-width {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-        }
-        @media screen and (max-width: 768px) {
           .hide-on-mobile {
             display: none !important;
             max-height: 0 !important;
